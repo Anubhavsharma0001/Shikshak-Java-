@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /** AI tutor: answers basic Java questions and reviews student code point by point (Gemini or Groq free tier, or Claude). */
 final class Ai {
     // Provider is picked from whichever key you set: GEMINI_API_KEY (free), GROQ_API_KEY (free), ANTHROPIC_API_KEY (paid).
-    // Or force one with AI_PROVIDER=gemini|groq|anthropic.
+    // Or force one with AI_PROVIDER=gemini|groq|anthropic|ollama (ollama runs on your own computer, no key).
     private static final String PROVIDER = pickProvider();
     private static final String KEY = switch (PROVIDER) {
         case "gemini" -> env("GEMINI_API_KEY", "");
@@ -26,14 +26,19 @@ final class Ai {
         case "anthropic" -> env("ANTHROPIC_API_KEY", "");
         default -> "";
     };
+    private static final boolean EXPLICIT_MODEL = !env("AI_MODEL", "").isEmpty();
+    private static volatile String model;
     private static final String MODEL = env("AI_MODEL", switch (PROVIDER) {
         case "gemini" -> "gemini-2.5-flash";
         case "groq" -> "llama-3.3-70b-versatile";
+        case "ollama" -> "llama3.2";
         default -> "claude-haiku-5-5";
     });
+    static { model = MODEL; }
     private static final String BASE = env("AI_BASE_URL", switch (PROVIDER) {
         case "gemini" -> "https://generativelanguage.googleapis.com";
         case "groq" -> "https://api.groq.com/openai/v1";
+        case "ollama" -> "http://localhost:11434/v1";
         default -> "https://api.anthropic.com";
     });
     private static final int PER_MINUTE = Integer.parseInt(env("AI_PER_MINUTE", "6"));   // per visitor
@@ -76,7 +81,7 @@ final class Ai {
         return "none";
     }
 
-    static boolean configured() { return !KEY.isBlank(); }
+    static boolean configured() { return PROVIDER.equals("ollama") || !KEY.isBlank(); }
 
     static Map<String, Object> answer(String ip, String mode, String question, String code) {
         if (!configured()) {
@@ -107,37 +112,21 @@ final class Ai {
         String system = review ? REVIEW_PROMPT : ASK_PROMPT;
         int maxTokens = review ? 1800 : 900;
         try {
-            HttpRequest.Builder rb = HttpRequest.newBuilder().timeout(Duration.ofSeconds(60)).header("content-type", "application/json");
-            Object body;
-            switch (PROVIDER) {
-                case "gemini" -> {
-                    rb.uri(URI.create(BASE + "/v1beta/models/" + MODEL + ":generateContent")).header("x-goog-api-key", KEY);
-                    Map<String, Object> gen = new LinkedHashMap<>();
-                    gen.put("maxOutputTokens", maxTokens + 1200); // room for the model's own thinking
-                    if (MODEL.contains("2.5-flash")) gen.put("thinkingConfig", Map.of("thinkingBudget", 0));
-                    body = Map.of(
-                        "system_instruction", Map.of("parts", List.of(Map.of("text", system))),
-                        "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", user)))),
-                        "generationConfig", gen);
-                }
-                case "groq" -> {
-                    rb.uri(URI.create(BASE + "/chat/completions")).header("authorization", "Bearer " + KEY);
-                    body = Map.of("model", MODEL, "max_tokens", maxTokens, "messages", List.of(
-                        Map.of("role", "system", "content", system), Map.of("role", "user", "content", user)));
-                }
-                default -> {
-                    rb.uri(URI.create(BASE + "/v1/messages")).header("x-api-key", KEY).header("anthropic-version", "2023-06-01");
-                    body = Map.of("model", MODEL, "max_tokens", maxTokens, "system", system,
-                        "messages", List.of(Map.of("role", "user", "content", user)));
+            HttpResponse<String> res = send(model, system, user, maxTokens);
+            // Gemini says 404 when a model name is retired/unknown for this key: find one that works and remember it.
+            if (res.statusCode() == 404 && PROVIDER.equals("gemini") && !EXPLICIT_MODEL) {
+                for (String m : discoverGeminiModels()) {
+                    HttpResponse<String> r2 = send(m, system, user, maxTokens);
+                    if (r2.statusCode() == 200) { model = m; System.out.println("AI: switched to model " + m); res = r2; break; }
+                    if (r2.statusCode() != 404 && r2.statusCode() != 429) { res = r2; break; }
                 }
             }
-            HttpRequest req = rb.POST(HttpRequest.BodyPublishers.ofString(Json.write(body))).build();
-            HttpResponse<String> res = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
             if (res.statusCode() == 429 || res.statusCode() == 529) {
+                System.err.println("AI limit " + res.statusCode() + ": " + res.body());
                 return CodeRunner.result(false, "limit", "The AI is very busy right now. Please try again in a minute.");
             }
             if (res.statusCode() != 200) {
-                System.err.println("AI error " + res.statusCode() + ": " + res.body());
+                System.err.println("AI error " + res.statusCode() + " (model " + model + "): " + res.body());
                 return CodeRunner.result(false, "setup", "The AI could not answer right now (error " + res.statusCode() + "). Please try again later.");
             }
             return CodeRunner.result(true, "ai", extractText(res.body()));
@@ -145,6 +134,57 @@ final class Ai {
             System.err.println("AI request failed: " + e);
             return CodeRunner.result(false, "setup", "Could not reach the AI service. Please try again later.");
         }
+    }
+
+    private static HttpResponse<String> send(String useModel, String system, String user, int maxTokens) throws Exception {
+        HttpRequest.Builder rb = HttpRequest.newBuilder().timeout(Duration.ofSeconds(60)).header("content-type", "application/json");
+        Object body;
+        switch (PROVIDER) {
+            case "gemini" -> {
+                rb.uri(URI.create(BASE + "/v1beta/models/" + useModel + ":generateContent")).header("x-goog-api-key", KEY);
+                Map<String, Object> gen = new LinkedHashMap<>();
+                gen.put("maxOutputTokens", maxTokens + 1200); // room for the model's own thinking
+                if (useModel.contains("2.5-flash")) gen.put("thinkingConfig", Map.of("thinkingBudget", 0));
+                body = Map.of(
+                    "system_instruction", Map.of("parts", List.of(Map.of("text", system))),
+                    "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", user)))),
+                    "generationConfig", gen);
+            }
+            case "groq", "ollama" -> {   // both speak the OpenAI chat format; Ollama needs no key
+                rb.uri(URI.create(BASE + "/chat/completions"));
+                if (!KEY.isBlank()) rb.header("authorization", "Bearer " + KEY);
+                body = Map.of("model", useModel, "max_tokens", maxTokens, "messages", List.of(
+                    Map.of("role", "system", "content", system), Map.of("role", "user", "content", user)));
+            }
+            default -> {
+                rb.uri(URI.create(BASE + "/v1/messages")).header("x-api-key", KEY).header("anthropic-version", "2023-06-01");
+                body = Map.of("model", useModel, "max_tokens", maxTokens, "system", system,
+                    "messages", List.of(Map.of("role", "user", "content", user)));
+            }
+        }
+        return HTTP.send(rb.POST(HttpRequest.BodyPublishers.ofString(Json.write(body))).build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    /** Asks Google which models this key may use; returns plain "flash" text models, newest name first. */
+    private static List<String> discoverGeminiModels() {
+        List<String> out = new ArrayList<>();
+        try {
+            HttpRequest req = HttpRequest.newBuilder(URI.create(BASE + "/v1beta/models?pageSize=200"))
+                .timeout(Duration.ofSeconds(20)).header("x-goog-api-key", KEY).GET().build();
+            HttpResponse<String> res = HTTP.send(req, HttpResponse.BodyHandlers.ofString());
+            if (res.statusCode() == 200 && Json.parse(res.body()) instanceof Map<?, ?> m && m.get("models") instanceof List<?> list) {
+                for (Object o : list) {
+                    if (!(o instanceof Map<?, ?> mm) || !(mm.get("name") instanceof String name)) continue;
+                    String id = name.startsWith("models/") ? name.substring(7) : name;
+                    boolean canGenerate = mm.get("supportedGenerationMethods") instanceof List<?> g && g.contains("generateContent");
+                    if (canGenerate && id.startsWith("gemini-") && id.contains("flash")
+                            && !id.matches(".*(lite|live|tts|image|preview|exp|thinking|audio|robotics|computer).*")) out.add(id);
+                }
+            } else System.err.println("AI model list failed " + res.statusCode() + ": " + res.body());
+        } catch (Exception e) { System.err.println("AI model list error: " + e); }
+        out.sort(java.util.Comparator.reverseOrder());
+        System.out.println("AI: models available to this key: " + out);
+        return out.size() > 5 ? out.subList(0, 5) : out;
     }
 
     private static String extractText(String json) {
