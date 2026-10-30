@@ -1145,5 +1145,919 @@ window.PRACTICE = {
     "expected": "0 0"
    }
   ]
+ },
+ "51": {
+  "task": "Read an integer, a decimal number and a character. Print each value on a separate line.",
+  "inp": "Three lines: an integer, a decimal number and a character.",
+  "out": "Print the three values on separate lines.",
+  "tests": [
+   {
+    "input": "10\n3.5\nA",
+    "expected": "10\n3.5\nA"
+   },
+   {
+    "input": "-5\n2.75\nz",
+    "expected": "-5\n2.75\nz"
+   },
+   {
+    "input": "0\n0.0\nX",
+    "expected": "0\n0\nX"
+   }
+  ]
+ },
+ "52": {
+  "task": "Read an integer and print its byte, short, int and long type labels with the value.",
+  "inp": "One integer n.",
+  "out": "Print the value four times, each on a separate line with its type label.",
+  "tests": [
+   {
+    "input": "25",
+    "expected": "byte: 25\nshort: 25\nint: 25\nlong: 25"
+   },
+   {
+    "input": "-10",
+    "expected": "byte: -10\nshort: -10\nint: -10\nlong: -10"
+   },
+   {
+    "input": "0",
+    "expected": "byte: 0\nshort: 0\nint: 0\nlong: 0"
+   }
+  ]
+ },
+ "53": {
+  "task": "Read a name and an age using input and print a greeting.",
+  "inp": "First line: name. Second line: age.",
+  "out": "Hello name, you are age years old.",
+  "tests": [
+   {
+    "input": "Anubhav\n21",
+    "expected": "Hello Anubhav, you are 21 years old."
+   },
+   {
+    "input": "Rahul\n20",
+    "expected": "Hello Rahul, you are 20 years old."
+   },
+   {
+    "input": "Aman\n18",
+    "expected": "Hello Aman, you are 18 years old."
+   }
+  ]
+ },
+ "54": {
+  "task": "Read a decimal number and print its integer part after type casting.",
+  "inp": "One decimal number.",
+  "out": "The integer part.",
+  "tests": [
+   {
+    "input": "12.75",
+    "expected": "12"
+   },
+   {
+    "input": "9.99",
+    "expected": "9"
+   },
+   {
+    "input": "-4.8",
+    "expected": "-4"
+   },
+   {
+    "input": "0.5",
+    "expected": "0"
+   }
+  ]
+ },
+ "55": {
+  "task": "Read a number and print it as a constant value.",
+  "inp": "One integer.",
+  "out": "The same integer.",
+  "tests": [
+   {
+    "input": "100",
+    "expected": "100"
+   },
+   {
+    "input": "25",
+    "expected": "25"
+   },
+   {
+    "input": "-8",
+    "expected": "-8"
+   }
+  ]
+ },
+ "56": {
+  "task": "Read two integers and print their sum. Use a local variable inside a method to calculate the sum.",
+  "inp": "One line with two integers.",
+  "out": "The sum.",
+  "tests": [
+   {
+    "input": "10 20",
+    "expected": "30"
+   },
+   {
+    "input": "-5 8",
+    "expected": "3"
+   },
+   {
+    "input": "0 0",
+    "expected": "0"
+   }
+  ]
+ },
+ "57": {
+  "task": "Read an integer and demonstrate wrapper class conversion by printing its value and its double.",
+  "inp": "One integer.",
+  "out": "Original value and doubled value on separate lines.",
+  "tests": [
+   {
+    "input": "10",
+    "expected": "10\n20"
+   },
+   {
+    "input": "5",
+    "expected": "5\n10"
+   },
+   {
+    "input": "-3",
+    "expected": "-3\n-6"
+   }
+  ]
+ },
+ "58": {
+  "task": "Read a word and print its length, uppercase form and lowercase form.",
+  "inp": "One word.",
+  "out": "Length, uppercase and lowercase on separate lines.",
+  "tests": [
+   {
+    "input": "Java",
+    "expected": "4\nJAVA\njava"
+   },
+   {
+    "input": "Hello",
+    "expected": "5\nHELLO\nhello"
+   },
+   {
+    "input": "SHIKSHAK",
+    "expected": "8\nSHIKSHAK\nshikshak"
+   }
+  ]
+ },
+ "59": {
+  "task": "Read a word and append Java to it using StringBuilder.",
+  "inp": "One word.",
+  "out": "The word followed by Java.",
+  "tests": [
+   {
+    "input": "Learn",
+    "expected": "LearnJava"
+   },
+   {
+    "input": "Hello",
+    "expected": "HelloJava"
+   },
+   {
+    "input": "Shikshak",
+    "expected": "ShikshakJava"
+   }
+  ]
+ },
+ "60": {
+  "task": "Read two integers and print their sum using formatted output.",
+  "inp": "One line with two integers.",
+  "out": "Sum = followed by the sum.",
+  "tests": [
+   {
+    "input": "10 20",
+    "expected": "Sum = 30"
+   },
+   {
+    "input": "5 7",
+    "expected": "Sum = 12"
+   },
+   {
+    "input": "-2 8",
+    "expected": "Sum = 6"
+   }
+  ]
+ },
+ "61": {
+  "task": "Read two integers and print their sum, difference, product and quotient.",
+  "inp": "One line with two integers. The second number must not be zero.",
+  "out": "Four results on separate lines.",
+  "tests": [
+   {
+    "input": "10 2",
+    "expected": "12\n8\n20\n5"
+   },
+   {
+    "input": "20 5",
+    "expected": "25\n15\n100\n4"
+   },
+   {
+    "input": "9 3",
+    "expected": "12\n6\n27\n3"
+   }
+  ]
+ },
+ "62": {
+  "task": "Read an integer, increment it once and print the result.",
+  "inp": "One integer.",
+  "out": "The incremented value.",
+  "tests": [
+   {
+    "input": "5",
+    "expected": "6"
+   },
+   {
+    "input": "0",
+    "expected": "1"
+   },
+   {
+    "input": "-3",
+    "expected": "-2"
+   }
+  ]
+ },
+ "63": {
+  "task": "Read two integers and print whether the first is greater, whether they are equal, and whether both are positive.",
+  "inp": "One line with two integers.",
+  "out": "Print three true or false values on separate lines.",
+  "tests": [
+   {
+    "input": "10 5",
+    "expected": "true\nfalse\ntrue"
+   },
+   {
+    "input": "4 4",
+    "expected": "false\ntrue\ntrue"
+   },
+   {
+    "input": "-2 8",
+    "expected": "false\nfalse\nfalse"
+   }
+  ]
+ },
+ "64": {
+  "task": "Read an integer and classify it as Positive, Negative or Zero.",
+  "inp": "One integer.",
+  "out": "Positive, Negative or Zero.",
+  "tests": [
+   {
+    "input": "10",
+    "expected": "Positive"
+   },
+   {
+    "input": "-5",
+    "expected": "Negative"
+   },
+   {
+    "input": "0",
+    "expected": "Zero"
+   }
+  ]
+ },
+ "65": {
+  "task": "Read an integer and print Even or Odd using the ternary operator.",
+  "inp": "One integer.",
+  "out": "Even or Odd.",
+  "tests": [
+   {
+    "input": "4",
+    "expected": "Even"
+   },
+   {
+    "input": "7",
+    "expected": "Odd"
+   },
+   {
+    "input": "0",
+    "expected": "Even"
+   },
+   {
+    "input": "-3",
+    "expected": "Odd"
+   }
+  ]
+ },
+ "66": {
+  "task": "Read a number from 1 to 7 and print the corresponding day of the week. 1 is Monday.",
+  "inp": "One integer from 1 to 7.",
+  "out": "The day name or Invalid.",
+  "tests": [
+   {
+    "input": "1",
+    "expected": "Monday"
+   },
+   {
+    "input": "3",
+    "expected": "Wednesday"
+   },
+   {
+    "input": "7",
+    "expected": "Sunday"
+   },
+   {
+    "input": "9",
+    "expected": "Invalid"
+   }
+  ]
+ },
+ "67": {
+  "task": "Read n and print numbers from 1 to n using a for loop.",
+  "inp": "One positive integer n.",
+  "out": "Numbers separated by spaces.",
+  "tests": [
+   {
+    "input": "5",
+    "expected": "1 2 3 4 5"
+   },
+   {
+    "input": "1",
+    "expected": "1"
+   },
+   {
+    "input": "10",
+    "expected": "1 2 3 4 5 6 7 8 9 10"
+   }
+  ]
+ },
+ "68": {
+  "task": "Read n and print numbers from n down to 1 using a while loop.",
+  "inp": "One positive integer n.",
+  "out": "Numbers separated by spaces.",
+  "tests": [
+   {
+    "input": "5",
+    "expected": "5 4 3 2 1"
+   },
+   {
+    "input": "1",
+    "expected": "1"
+   },
+   {
+    "input": "4",
+    "expected": "4 3 2 1"
+   }
+  ]
+ },
+ "69": {
+  "task": "Read n and print numbers from 1 to n using a do-while loop.",
+  "inp": "One positive integer n.",
+  "out": "Numbers separated by spaces.",
+  "tests": [
+   {
+    "input": "5",
+    "expected": "1 2 3 4 5"
+   },
+   {
+    "input": "1",
+    "expected": "1"
+   },
+   {
+    "input": "3",
+    "expected": "1 2 3"
+   }
+  ]
+ },
+ "70": {
+  "task": "Read n and print numbers from 1 to n, skipping multiples of 3 and stopping after printing 8.",
+  "inp": "One positive integer n.",
+  "out": "The printed numbers separated by spaces.",
+  "tests": [
+   {
+    "input": "10",
+    "expected": "1 2 4 5 7 8"
+   },
+   {
+    "input": "5",
+    "expected": "1 2 4 5"
+   },
+   {
+    "input": "15",
+    "expected": "1 2 4 5 7 8"
+   }
+  ]
+ },
+ "71": {
+  "task": "Read an array and print all its elements.",
+  "inp": "Line 1: n. Line 2: n integers.",
+  "out": "Array elements separated by spaces.",
+  "tests": [
+   {
+    "input": "5\n1 2 3 4 5",
+    "expected": "1 2 3 4 5"
+   },
+   {
+    "input": "3\n7 8 9",
+    "expected": "7 8 9"
+   }
+  ]
+ },
+ "72": {
+  "task": "Read an array and print its elements in reverse order.",
+  "inp": "Line 1: n. Line 2: n integers.",
+  "out": "Reversed elements separated by spaces.",
+  "tests": [
+   {
+    "input": "5\n1 2 3 4 5",
+    "expected": "5 4 3 2 1"
+   },
+   {
+    "input": "3\n7 8 9",
+    "expected": "9 8 7"
+   }
+  ]
+ },
+ "73": {
+  "task": "Read an array and print its maximum, minimum and sum.",
+  "inp": "Line 1: n. Line 2: n integers.",
+  "out": "Maximum, minimum and sum on separate lines.",
+  "tests": [
+   {
+    "input": "5\n1 2 3 4 5",
+    "expected": "5\n1\n15"
+   },
+   {
+    "input": "4\n-2 8 0 5",
+    "expected": "8\n-2\n11"
+   }
+  ]
+ },
+ "74": {
+  "task": "Read an array and a key. Find the first index of the key using linear search.",
+  "inp": "Line 1: n. Line 2: n integers. Line 3: key.",
+  "out": "Index or -1.",
+  "tests": [
+   {
+    "input": "5\n4 8 15 16 23\n16",
+    "expected": "3"
+   },
+   {
+    "input": "4\n1 2 3 4\n9",
+    "expected": "-1"
+   }
+  ]
+ },
+ "75": {
+  "task": "Read a sorted array and a key. Find its index using binary search.",
+  "inp": "Line 1: n. Line 2: sorted integers. Line 3: key.",
+  "out": "Index or -1.",
+  "tests": [
+   {
+    "input": "5\n1 3 5 7 9\n7",
+    "expected": "3"
+   },
+   {
+    "input": "5\n1 3 5 7 9\n4",
+    "expected": "-1"
+   }
+  ]
+ },
+ "76": {
+  "task": "Read a two-dimensional matrix and print its elements row by row.",
+  "inp": "Line 1: rows and columns. Following lines contain matrix values.",
+  "out": "Each matrix row on a separate line.",
+  "tests": [
+   {
+    "input": "2 3\n1 2 3\n4 5 6",
+    "expected": "1 2 3\n4 5 6"
+   },
+   {
+    "input": "2 2\n7 8\n9 10",
+    "expected": "7 8\n9 10"
+   }
+  ]
+ },
+ "77": {
+  "task": "Read a word and print the frequency of each character.",
+  "inp": "One word.",
+  "out": "Character frequencies in order of first appearance.",
+  "tests": [
+   {
+    "input": "java",
+    "expected": "j=1 a=2 v=1"
+   },
+   {
+    "input": "hello",
+    "expected": "h=1 e=1 l=2 o=1"
+   },
+   {
+    "input": "aabbbc",
+    "expected": "a=2 b=3 c=1"
+   }
+  ]
+ },
+ "78": {
+  "task": "Read two words and check whether they are anagrams.",
+  "inp": "One line containing two words.",
+  "out": "Anagrams or Not anagrams.",
+  "tests": [
+   {
+    "input": "listen silent",
+    "expected": "Anagrams"
+   },
+   {
+    "input": "hello world",
+    "expected": "Not anagrams"
+   },
+   {
+    "input": "dusty study",
+    "expected": "Anagrams"
+   }
+  ]
+ },
+ "79": {
+  "task": "Read a word and append Java using StringBuilder, then print the result.",
+  "inp": "One word.",
+  "out": "The updated word.",
+  "tests": [
+   {
+    "input": "Hello",
+    "expected": "HelloJava"
+   },
+   {
+    "input": "Learn",
+    "expected": "LearnJava"
+   },
+   {
+    "input": "Shikshak",
+    "expected": "ShikshakJava"
+   }
+  ]
+ },
+ "80": {
+  "task": "Read an array and sort it in ascending order using Java array utilities.",
+  "inp": "Line 1: n. Line 2: n integers.",
+  "out": "Sorted elements separated by spaces.",
+  "tests": [
+   {
+    "input": "5\n5 2 4 1 3",
+    "expected": "1 2 3 4 5"
+   },
+   {
+    "input": "4\n9 -1 7 0",
+    "expected": "-1 0 7 9"
+   }
+  ]
+ },
+ "81": {
+  "task": "Read two integers and print their sum using a method.",
+  "inp": "One line with two integers.",
+  "out": "The sum.",
+  "tests": [
+   {
+    "input": "10 20",
+    "expected": "30"
+   },
+   {
+    "input": "5 7",
+    "expected": "12"
+   },
+   {
+    "input": "-3 8",
+    "expected": "5"
+   }
+  ]
+ },
+ "82": {
+  "task": "Read two integers and print their product using a method with parameters and a return value.",
+  "inp": "One line with two integers.",
+  "out": "The product.",
+  "tests": [
+   {
+    "input": "5 4",
+    "expected": "20"
+   },
+   {
+    "input": "7 8",
+    "expected": "56"
+   },
+   {
+    "input": "-2 6",
+    "expected": "-12"
+   }
+  ]
+ },
+ "83": {
+  "task": "Read two integers and print their sum and product to demonstrate method overloading.",
+  "inp": "One line with two integers.",
+  "out": "Sum and product on separate lines.",
+  "tests": [
+   {
+    "input": "4 5",
+    "expected": "9\n20"
+   },
+   {
+    "input": "3 7",
+    "expected": "10\n21"
+   },
+   {
+    "input": "-2 6",
+    "expected": "4\n-12"
+   }
+  ]
+ },
+ "84": {
+  "task": "Read an integer and print its value after passing it to a method that increments its local copy.",
+  "inp": "One integer.",
+  "out": "Original value and unchanged original value on separate lines.",
+  "tests": [
+   {
+    "input": "5",
+    "expected": "5\n5"
+   },
+   {
+    "input": "10",
+    "expected": "10\n10"
+   },
+   {
+    "input": "-3",
+    "expected": "-3\n-3"
+   }
+  ]
+ },
+ "85": {
+  "task": "Read n and print the sum of numbers from 1 to n using recursion.",
+  "inp": "One non-negative integer.",
+  "out": "The sum.",
+  "tests": [
+   {
+    "input": "5",
+    "expected": "15"
+   },
+   {
+    "input": "10",
+    "expected": "55"
+   },
+   {
+    "input": "0",
+    "expected": "0"
+   }
+  ]
+ },
+ "86": {
+  "task": "Read n and print its factorial using recursion.",
+  "inp": "One non-negative integer n.",
+  "out": "n factorial.",
+  "tests": [
+   {
+    "input": "5",
+    "expected": "120"
+   },
+   {
+    "input": "0",
+    "expected": "1"
+   },
+   {
+    "input": "6",
+    "expected": "720"
+   }
+  ]
+ },
+ "87": {
+  "task": "Read n and print the first n Fibonacci numbers.",
+  "inp": "One positive integer n.",
+  "out": "Fibonacci numbers separated by spaces.",
+  "tests": [
+   {
+    "input": "1",
+    "expected": "0"
+   },
+   {
+    "input": "2",
+    "expected": "0 1"
+   },
+   {
+    "input": "8",
+    "expected": "0 1 1 2 3 5 8 13"
+   }
+  ]
+ },
+ "88": {
+  "task": "Read two integers and print their greatest common divisor using recursion.",
+  "inp": "One line with two positive integers.",
+  "out": "The GCD.",
+  "tests": [
+   {
+    "input": "48 18",
+    "expected": "6"
+   },
+   {
+    "input": "20 12",
+    "expected": "4"
+   },
+   {
+    "input": "7 5",
+    "expected": "1"
+   }
+  ]
+ },
+ "89": {
+  "task": "Read n and print numbers from 1 to n using iteration.",
+  "inp": "One positive integer.",
+  "out": "Numbers separated by spaces.",
+  "tests": [
+   {
+    "input": "5",
+    "expected": "1 2 3 4 5"
+   },
+   {
+    "input": "1",
+    "expected": "1"
+   },
+   {
+    "input": "4",
+    "expected": "1 2 3 4"
+   }
+  ]
+ },
+ "90": {
+  "task": "Read n and print the sum from 1 to n. Use a recursive method with a base case.",
+  "inp": "One non-negative integer.",
+  "out": "The sum.",
+  "tests": [
+   {
+    "input": "5",
+    "expected": "15"
+   },
+   {
+    "input": "10",
+    "expected": "55"
+   },
+   {
+    "input": "0",
+    "expected": "0"
+   }
+  ]
+ },
+ "91": {
+  "task": "Read a name and age and print the details of a Person object.",
+  "inp": "First line: name. Second line: age.",
+  "out": "Name and age on separate lines.",
+  "tests": [
+   {
+    "input": "Anubhav\n21",
+    "expected": "Name: Anubhav\nAge: 21"
+   },
+   {
+    "input": "Rahul\n20",
+    "expected": "Name: Rahul\nAge: 20"
+   }
+  ]
+ },
+ "92": {
+  "task": "Read a name and print a greeting using a constructor-initialized object.",
+  "inp": "One name.",
+  "out": "Hello followed by the name.",
+  "tests": [
+   {
+    "input": "Anubhav",
+    "expected": "Hello Anubhav"
+   },
+   {
+    "input": "Rahul",
+    "expected": "Hello Rahul"
+   },
+   {
+    "input": "Aman",
+    "expected": "Hello Aman"
+   }
+  ]
+ },
+ "93": {
+  "task": "Read a name and age and print them as encapsulated object details.",
+  "inp": "First line: name. Second line: age.",
+  "out": "Name and age on separate lines.",
+  "tests": [
+   {
+    "input": "Anubhav\n21",
+    "expected": "Name: Anubhav\nAge: 21"
+   },
+   {
+    "input": "Aman\n18",
+    "expected": "Name: Aman\nAge: 18"
+   }
+  ]
+ },
+ "94": {
+  "task": "Read two integers representing base and derived class values and print both.",
+  "inp": "One line with two integers.",
+  "out": "Base value and derived value on separate lines.",
+  "tests": [
+   {
+    "input": "10 20",
+    "expected": "Base: 10\nDerived: 20"
+   },
+   {
+    "input": "5 15",
+    "expected": "Base: 5\nDerived: 15"
+   }
+  ]
+ },
+ "95": {
+  "task": "Read an integer and print the overridden method result.",
+  "inp": "One integer.",
+  "out": "Value followed by the word Overridden.",
+  "tests": [
+   {
+    "input": "10",
+    "expected": "Overridden: 10"
+   },
+   {
+    "input": "25",
+    "expected": "Overridden: 25"
+   },
+   {
+    "input": "-5",
+    "expected": "Overridden: -5"
+   }
+  ]
+ },
+ "96": {
+  "task": "Read an integer and print a value returned by an interface implementation.",
+  "inp": "One integer.",
+  "out": "Value followed by Interface.",
+  "tests": [
+   {
+    "input": "10",
+    "expected": "Interface: 10"
+   },
+   {
+    "input": "20",
+    "expected": "Interface: 20"
+   },
+   {
+    "input": "5",
+    "expected": "Interface: 5"
+   }
+  ]
+ },
+ "97": {
+  "task": "Read an integer and print its value and its square.",
+  "inp": "One integer.",
+  "out": "Value and square on separate lines.",
+  "tests": [
+   {
+    "input": "5",
+    "expected": "5\n25"
+   },
+   {
+    "input": "10",
+    "expected": "10\n100"
+   },
+   {
+    "input": "-3",
+    "expected": "-3\n9"
+   }
+  ]
+ },
+ "98": {
+  "task": "Read two integers and safely divide the first by the second. Print Invalid divisor if the divisor is zero.",
+  "inp": "One line with two integers.",
+  "out": "The integer quotient or Invalid divisor.",
+  "tests": [
+   {
+    "input": "10 2",
+    "expected": "5"
+   },
+   {
+    "input": "9 3",
+    "expected": "3"
+   },
+   {
+    "input": "5 0",
+    "expected": "Invalid divisor"
+   }
+  ]
+ },
+ "99": {
+  "task": "Read n integers and store them in a list. Print the list elements.",
+  "inp": "Line 1: n. Line 2: n integers.",
+  "out": "List elements separated by spaces.",
+  "tests": [
+   {
+    "input": "4\n10 20 30 40",
+    "expected": "10 20 30 40"
+   },
+   {
+    "input": "3\n5 6 7",
+    "expected": "5 6 7"
+   }
+  ]
+ },
+ "100": {
+  "task": "Read n key-value pairs and print them in insertion order as key=value.",
+  "inp": "Line 1: n. Following n lines contain a word key and an integer value.",
+  "out": "One key=value pair per line.",
+  "tests": [
+   {
+    "input": "3\napple 10\nbanana 20\nmango 30",
+    "expected": "apple=10\nbanana=20\nmango=30"
+   },
+   {
+    "input": "2\nJava 1\nPython 2",
+    "expected": "Java=1\nPython=2"
+   }
+  ]
  }
 };
