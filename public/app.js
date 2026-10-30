@@ -1,12 +1,13 @@
 
 (function () {
   const LEVEL_NAMES = [
-    "Level 1 · STAGE 1",
-    "Level 2 · STAGE 2",
-    "Level 3 · STAGE 3",
-    "Level 4 · STAGE 4",
-  ];
-  const TAB_NAMES = ["1 · Basics", "2 · Solution", "3 · Methods", "4 · Advanced"];
+  "Stage 1",
+  "Stage 2",
+  "Stage 3",
+  "Stage 4",
+];
+
+const TAB_NAMES = ["1 · Stage 1", "2 · Stage 2", "3 · Stage 3", "4 · Stage 4"];
   const TOPIC_ORDER = ["Basics", "Numbers", "Patterns", "Arrays", "Searching & Sorting", "Strings", "Recursion"];
   const STARTER = "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // write your solution here\n    }\n}\n";
 
@@ -61,20 +62,20 @@
   }
   applyTheme(store.get("sj_theme", "dark"));
   $("themeBtn").onclick = () => {
-    const t = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+     t = document.documentElement.dataset.theme === "light" ? "dark" : "light";
     store.set("sj_theme", t);
     applyTheme(t);
   };
 
   // ---------- Streak and badges ----------
-  const dayStr = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+   dayStr = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   function markActive() {
-    const today = dayStr(new Date());
+     today = dayStr(new Date());
     if (!days.includes(today)) { days.push(today); store.set("sj_days", days); }
     updateChips();
   }
   function streak() {
-    const set = new Set(days);
+     set = new Set(days);
     const d = new Date();
     if (!set.has(dayStr(d))) d.setDate(d.getDate() - 1);
     let n = 0;
