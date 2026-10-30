@@ -1,0 +1,39 @@
+
+name: Generate Practice Questions
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tools/practice-spec.js'
+      - 'tools/build-practice.js'
+      - '.github/workflows/generate-practice.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Generate practice.js
+        run: node tools/build-practice.js
+
+      - name: Commit generated file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/practice.js
+          git diff --cached --quiet || git commit -m "Generate practice.js for all questions"
+          git push
