@@ -1,0 +1,9 @@
+{
+  "name": "shikshak-java-tools",
+  "private": true,
+  "description": "Optional developer scripts only. The backend is Java (see pom.xml); you do not need Node to run the app.",
+  "scripts": {
+    "test": "node test-all.js",
+    "build-practice": "node tools/build-practice.js"
+  }
+}
