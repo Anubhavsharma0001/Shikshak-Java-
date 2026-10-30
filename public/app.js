@@ -1,10 +1,10 @@
 
 (function () {
   const LEVEL_NAMES = [
-  "Stage 1",
-  "Stage 2",
-  "Stage 3",
-  "Stage 4",
+  "BASIC",
+  "SIMPLE SOLUTION",
+  "BY METHODS",
+  "ADVANCED",
 ];
 
 const TAB_NAMES = ["1 · Stage 1", "2 · Stage 2", "3 · Stage 3", "4 · Stage 4"];
