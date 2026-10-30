@@ -459,4 +459,5 @@ module.exports = {
   out: "One key=value pair per line.",
   tests: ["3\napple 10\nbanana 20\nmango 30", "2\nJava 1\nPython 2"],
   f: (s) => { const l = lines(s); const n = nums(l[0])[0]; return l.slice(1, n + 1).map(x => { const p = x.trim().split(/\s+/); return `${p[0]}=${p[1]}`; }).join("\n"); }
+}
 };
