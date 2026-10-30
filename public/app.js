@@ -110,7 +110,7 @@ const TOPIC_ORDER = [
     { id: "pass25", icon: "💪", name: "25 solved", desc: "Pass 25 practice checks", ok: (s) => s.passed >= 25 },
     { id: "done10", icon: "⭐", name: "10 done", desc: "Finish 10 questions", ok: (s) => s.done >= 10 },
     { id: "done25", icon: "🌟", name: "25 done", desc: "Finish 25 questions", ok: (s) => s.done >= 25 },
-    { id: "done50", icon: "🏆", name: "All 50", desc: "Finish every question", ok: (s) => s.done >= window.QUESTIONS.length },
+   { id: "done50", icon: "🏆", name: "All 100", desc: "Finish every question", ok: (s) => s.done >= window.QUESTIONS.length },
     { id: "topic", icon: "📚", name: "Topic finished", desc: "Finish every question of one topic", ok: (s) => s.topicDone },
     { id: "streak3", icon: "🔥", name: "3-day streak", desc: "Practice 3 days in a row", ok: (s) => s.streak >= 3 },
     { id: "streak7", icon: "🚀", name: "7-day streak", desc: "Practice 7 days in a row", ok: (s) => s.streak >= 7 },
