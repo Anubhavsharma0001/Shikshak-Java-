@@ -143,8 +143,8 @@
   }).catch(() => {
     const el = $("statusLine");
     el.textContent = isLocal()
-      ? "Backend not reachable. Start it with: npm start"
-      : "Online mode: lessons work here. Run and Practice checks work only on your computer (npm start).";
+      ? "Backend not reachable. Start it with: ./run.sh (Windows: run.bat)"
+      : "Online mode: lessons work here. Run and Practice checks work only on your computer (./run.sh).";
     el.className = "status bad";
     javaOk = false;
   });
@@ -362,8 +362,8 @@
     return r.json();
   }
   const offlineMsg = () => isLocal()
-    ? "Cannot reach the backend. Start it with:  npm start"
-    : "Run works only when Shikshak Java is started on your own computer (npm start).\n\nOn this website you can read the lessons and copy the code.\nTo test it online, paste the code into https://onecompiler.com/java";
+    ? "Cannot reach the backend. Start it with:  ./run.sh  (Windows: run.bat)"
+    : "Run works only when Shikshak Java is started on your own computer (./run.sh).\n\nOn this website you can read the lessons and copy the code.\nTo test it online, paste the code into https://onecompiler.com/java";
 
   async function run() {
     const out = $("out"), btn = $("runBtn");
