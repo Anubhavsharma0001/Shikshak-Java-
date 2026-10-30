@@ -109,4 +109,354 @@ module.exports = {
   tests: ["9\n-2 1 -3 4 -1 2 1 -5 4", "1\n-5", "5\n1 2 3 4 5", "3\n-3 -2 -1"], f: (s) => { const a = arr2(s); let cur = a[0], best = a[0]; for (let i = 1; i < a.length; i++) { cur = Math.max(a[i], cur + a[i]); best = Math.max(best, cur); } return String(best); } },
 50: { task: "Read an array and move all zeros to the end while keeping the order of the other elements.", inp: "Line 1: n. Line 2: n integers.", out: "The new array separated by single spaces.",
   tests: ["7\n0 4 0 0 5 6 0", "5\n0 1 0 3 12", "3\n1 2 3", "2\n0 0"], f: (s) => { const a = arr2(s); return join(a.filter((x) => x !== 0).concat(a.filter((x) => x === 0))); } },
+
+51: {
+  task: "Read an integer, a decimal number and a character. Print each value on a separate line.",
+  inp: "Three lines: an integer, a decimal number and a character.",
+  out: "Print the three values on separate lines.",
+  tests: ["10\n3.5\nA", "-5\n2.75\nz", "0\n0.0\nX"],
+  f: (s) => { const l = lines(s); return `${l[0]}\n${Number(l[1])}\n${l[2]}`; }
+},
+52: {
+  task: "Read an integer and print its byte, short, int and long type labels with the value.",
+  inp: "One integer n.",
+  out: "Print the value four times, each on a separate line with its type label.",
+  tests: ["25", "-10", "0"],
+  f: (s) => { const n = nums(s)[0]; return `byte: ${n}\nshort: ${n}\nint: ${n}\nlong: ${n}`; }
+},
+53: {
+  task: "Read a name and an age using input and print a greeting.",
+  inp: "First line: name. Second line: age.",
+  out: "Hello name, you are age years old.",
+  tests: ["Anubhav\n21", "Rahul\n20", "Aman\n18"],
+  f: (s) => { const l = lines(s); return `Hello ${l[0]}, you are ${l[1]} years old.`; }
+},
+54: {
+  task: "Read a decimal number and print its integer part after type casting.",
+  inp: "One decimal number.",
+  out: "The integer part.",
+  tests: ["12.75", "9.99", "-4.8", "0.5"],
+  f: (s) => String(Math.trunc(Number(s.trim())))
+},
+55: {
+  task: "Read a number and print it as a constant value.",
+  inp: "One integer.",
+  out: "The same integer.",
+  tests: ["100", "25", "-8"],
+  f: (s) => String(nums(s)[0])
+},
+56: {
+  task: "Read two integers and print their sum. Use a local variable inside a method to calculate the sum.",
+  inp: "One line with two integers.",
+  out: "The sum.",
+  tests: ["10 20", "-5 8", "0 0"],
+  f: (s) => String(nums(s).reduce((a, b) => a + b, 0))
+},
+57: {
+  task: "Read an integer and demonstrate wrapper class conversion by printing its value and its double.",
+  inp: "One integer.",
+  out: "Original value and doubled value on separate lines.",
+  tests: ["10", "5", "-3"],
+  f: (s) => { const n = nums(s)[0]; return `${n}\n${n * 2}`; }
+},
+58: {
+  task: "Read a word and print its length, uppercase form and lowercase form.",
+  inp: "One word.",
+  out: "Length, uppercase and lowercase on separate lines.",
+  tests: ["Java", "Hello", "SHIKSHAK"],
+  f: (s) => `${s.trim().length}\n${s.trim().toUpperCase()}\n${s.trim().toLowerCase()}`
+},
+59: {
+  task: "Read a word and append Java to it using StringBuilder.",
+  inp: "One word.",
+  out: "The word followed by Java.",
+  tests: ["Learn", "Hello", "Shikshak"],
+  f: (s) => `${s.trim()}Java`
+},
+60: {
+  task: "Read two integers and print their sum using formatted output.",
+  inp: "One line with two integers.",
+  out: "Sum = followed by the sum.",
+  tests: ["10 20", "5 7", "-2 8"],
+  f: (s) => `Sum = ${nums(s).reduce((a, b) => a + b, 0)}`
+},
+61: {
+  task: "Read two integers and print their sum, difference, product and quotient.",
+  inp: "One line with two integers. The second number must not be zero.",
+  out: "Four results on separate lines.",
+  tests: ["10 2", "20 5", "9 3"],
+  f: (s) => { const [a, b] = nums(s); return `${a + b}\n${a - b}\n${a * b}\n${Math.trunc(a / b)}`; }
+},
+62: {
+  task: "Read an integer, increment it once and print the result.",
+  inp: "One integer.",
+  out: "The incremented value.",
+  tests: ["5", "0", "-3"],
+  f: (s) => String(nums(s)[0] + 1)
+},
+63: {
+  task: "Read two integers and print whether the first is greater, whether they are equal, and whether both are positive.",
+  inp: "One line with two integers.",
+  out: "Print three true or false values on separate lines.",
+  tests: ["10 5", "4 4", "-2 8"],
+  f: (s) => { const [a, b] = nums(s); return `${a > b}\n${a === b}\n${a > 0 && b > 0}`; }
+},
+64: {
+  task: "Read an integer and classify it as Positive, Negative or Zero.",
+  inp: "One integer.",
+  out: "Positive, Negative or Zero.",
+  tests: ["10", "-5", "0"],
+  f: (s) => { const n = nums(s)[0]; return n > 0 ? "Positive" : n < 0 ? "Negative" : "Zero"; }
+},
+65: {
+  task: "Read an integer and print Even or Odd using the ternary operator.",
+  inp: "One integer.",
+  out: "Even or Odd.",
+  tests: ["4", "7", "0", "-3"],
+  f: (s) => nums(s)[0] % 2 === 0 ? "Even" : "Odd"
+},
+66: {
+  task: "Read a number from 1 to 7 and print the corresponding day of the week. 1 is Monday.",
+  inp: "One integer from 1 to 7.",
+  out: "The day name or Invalid.",
+  tests: ["1", "3", "7", "9"],
+  f: (s) => ["Invalid", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][nums(s)[0]] || "Invalid"
+},
+67: {
+  task: "Read n and print numbers from 1 to n using a for loop.",
+  inp: "One positive integer n.",
+  out: "Numbers separated by spaces.",
+  tests: ["5", "1", "10"],
+  f: (s) => Array.from({length: nums(s)[0]}, (_, i) => i + 1).join(" ")
+},
+68: {
+  task: "Read n and print numbers from n down to 1 using a while loop.",
+  inp: "One positive integer n.",
+  out: "Numbers separated by spaces.",
+  tests: ["5", "1", "4"],
+  f: (s) => Array.from({length: nums(s)[0]}, (_, i) => nums(s)[0] - i).join(" ")
+},
+69: {
+  task: "Read n and print numbers from 1 to n using a do-while loop.",
+  inp: "One positive integer n.",
+  out: "Numbers separated by spaces.",
+  tests: ["5", "1", "3"],
+  f: (s) => Array.from({length: nums(s)[0]}, (_, i) => i + 1).join(" ")
+},
+70: {
+  task: "Read n and print numbers from 1 to n, skipping multiples of 3 and stopping after printing 8.",
+  inp: "One positive integer n.",
+  out: "The printed numbers separated by spaces.",
+  tests: ["10", "5", "15"],
+  f: (s) => { const n = nums(s)[0], a = []; for (let i = 1; i <= n; i++) { if (i % 3 === 0) continue; a.push(i); if (i === 8) break; } return a.join(" "); }
+},
+71: {
+  task: "Read an array and print all its elements.",
+  inp: "Line 1: n. Line 2: n integers.",
+  out: "Array elements separated by spaces.",
+  tests: ["5\n1 2 3 4 5", "3\n7 8 9"],
+  f: (s) => join(arr2(s))
+},
+72: {
+  task: "Read an array and print its elements in reverse order.",
+  inp: "Line 1: n. Line 2: n integers.",
+  out: "Reversed elements separated by spaces.",
+  tests: ["5\n1 2 3 4 5", "3\n7 8 9"],
+  f: (s) => join(arr2(s).reverse())
+},
+73: {
+  task: "Read an array and print its maximum, minimum and sum.",
+  inp: "Line 1: n. Line 2: n integers.",
+  out: "Maximum, minimum and sum on separate lines.",
+  tests: ["5\n1 2 3 4 5", "4\n-2 8 0 5"],
+  f: (s) => { const a = arr2(s); return `${Math.max(...a)}\n${Math.min(...a)}\n${a.reduce((x, y) => x + y, 0)}`; }
+},
+74: {
+  task: "Read an array and a key. Find the first index of the key using linear search.",
+  inp: "Line 1: n. Line 2: n integers. Line 3: key.",
+  out: "Index or -1.",
+  tests: ["5\n4 8 15 16 23\n16", "4\n1 2 3 4\n9"],
+  f: (s) => String(arr2(s).indexOf(nums(lines(s)[2])[0]))
+},
+75: {
+  task: "Read a sorted array and a key. Find its index using binary search.",
+  inp: "Line 1: n. Line 2: sorted integers. Line 3: key.",
+  out: "Index or -1.",
+  tests: ["5\n1 3 5 7 9\n7", "5\n1 3 5 7 9\n4"],
+  f: (s) => String(arr2(s).indexOf(nums(lines(s)[2])[0]))
+},
+76: {
+  task: "Read a two-dimensional matrix and print its elements row by row.",
+  inp: "Line 1: rows and columns. Following lines contain matrix values.",
+  out: "Each matrix row on a separate line.",
+  tests: ["2 3\n1 2 3\n4 5 6", "2 2\n7 8\n9 10"],
+  f: (s) => { const l = lines(s); const [r] = nums(l[0]); return l.slice(1, r + 1).map(x => join(nums(x))).join("\n"); }
+},
+77: {
+  task: "Read a word and print the frequency of each character.",
+  inp: "One word.",
+  out: "Character frequencies in order of first appearance.",
+  tests: ["java", "hello", "aabbbc"],
+  f: (s) => { const m = new Map(); for (const c of s.trim()) m.set(c, (m.get(c) || 0) + 1); return [...m].map(([c, n]) => `${c}=${n}`).join(" "); }
+},
+78: {
+  task: "Read two words and check whether they are anagrams.",
+  inp: "One line containing two words.",
+  out: "Anagrams or Not anagrams.",
+  tests: ["listen silent", "hello world", "dusty study"],
+  f: (s) => { const [a, b] = s.trim().toLowerCase().split(/\s+/).map(x => x.split("").sort().join("")); return a === b ? "Anagrams" : "Not anagrams"; }
+},
+79: {
+  task: "Read a word and append Java using StringBuilder, then print the result.",
+  inp: "One word.",
+  out: "The updated word.",
+  tests: ["Hello", "Learn", "Shikshak"],
+  f: (s) => `${s.trim()}Java`
+},
+80: {
+  task: "Read an array and sort it in ascending order using Java array utilities.",
+  inp: "Line 1: n. Line 2: n integers.",
+  out: "Sorted elements separated by spaces.",
+  tests: ["5\n5 2 4 1 3", "4\n9 -1 7 0"],
+  f: (s) => join(arr2(s).sort((a, b) => a - b))
+},
+81: {
+  task: "Read two integers and print their sum using a method.",
+  inp: "One line with two integers.",
+  out: "The sum.",
+  tests: ["10 20", "5 7", "-3 8"],
+  f: (s) => String(nums(s).reduce((a, b) => a + b, 0))
+},
+82: {
+  task: "Read two integers and print their product using a method with parameters and a return value.",
+  inp: "One line with two integers.",
+  out: "The product.",
+  tests: ["5 4", "7 8", "-2 6"],
+  f: (s) => String(nums(s).reduce((a, b) => a * b, 1))
+},
+83: {
+  task: "Read two integers and print their sum and product to demonstrate method overloading.",
+  inp: "One line with two integers.",
+  out: "Sum and product on separate lines.",
+  tests: ["4 5", "3 7", "-2 6"],
+  f: (s) => { const [a, b] = nums(s); return `${a + b}\n${a * b}`; }
+},
+84: {
+  task: "Read an integer and print its value after passing it to a method that increments its local copy.",
+  inp: "One integer.",
+  out: "Original value and unchanged original value on separate lines.",
+  tests: ["5", "10", "-3"],
+  f: (s) => { const n = nums(s)[0]; return `${n}\n${n}`; }
+},
+85: {
+  task: "Read n and print the sum of numbers from 1 to n using recursion.",
+  inp: "One non-negative integer.",
+  out: "The sum.",
+  tests: ["5", "10", "0"],
+  f: (s) => String((nums(s)[0] * (nums(s)[0] + 1)) / 2)
+},
+86: {
+  task: "Read n and print its factorial using recursion.",
+  inp: "One non-negative integer n.",
+  out: "n factorial.",
+  tests: ["5", "0", "6"],
+  f: (s) => { let r = 1n; for (let i = 2n; i <= BigInt(nums(s)[0]); i++) r *= i; return String(r); }
+},
+87: {
+  task: "Read n and print the first n Fibonacci numbers.",
+  inp: "One positive integer n.",
+  out: "Fibonacci numbers separated by spaces.",
+  tests: ["1", "2", "8"],
+  f: (s) => { const n = nums(s)[0], a = []; let x = 0, y = 1; for (let i = 0; i < n; i++) { a.push(x); [x, y] = [y, x + y]; } return join(a); }
+},
+88: {
+  task: "Read two integers and print their greatest common divisor using recursion.",
+  inp: "One line with two positive integers.",
+  out: "The GCD.",
+  tests: ["48 18", "20 12", "7 5"],
+  f: (s) => String(gcd(...nums(s)))
+},
+89: {
+  task: "Read n and print numbers from 1 to n using iteration.",
+  inp: "One positive integer.",
+  out: "Numbers separated by spaces.",
+  tests: ["5", "1", "4"],
+  f: (s) => Array.from({length: nums(s)[0]}, (_, i) => i + 1).join(" ")
+},
+90: {
+  task: "Read n and print the sum from 1 to n. Use a recursive method with a base case.",
+  inp: "One non-negative integer.",
+  out: "The sum.",
+  tests: ["5", "10", "0"],
+  f: (s) => String((nums(s)[0] * (nums(s)[0] + 1)) / 2)
+},
+91: {
+  task: "Read a name and age and print the details of a Person object.",
+  inp: "First line: name. Second line: age.",
+  out: "Name and age on separate lines.",
+  tests: ["Anubhav\n21", "Rahul\n20"],
+  f: (s) => { const l = lines(s); return `Name: ${l[0]}\nAge: ${l[1]}`; }
+},
+92: {
+  task: "Read a name and print a greeting using a constructor-initialized object.",
+  inp: "One name.",
+  out: "Hello followed by the name.",
+  tests: ["Anubhav", "Rahul", "Aman"],
+  f: (s) => `Hello ${s.trim()}`
+},
+93: {
+  task: "Read a name and age and print them as encapsulated object details.",
+  inp: "First line: name. Second line: age.",
+  out: "Name and age on separate lines.",
+  tests: ["Anubhav\n21", "Aman\n18"],
+  f: (s) => { const l = lines(s); return `Name: ${l[0]}\nAge: ${l[1]}`; }
+},
+94: {
+  task: "Read two integers representing base and derived class values and print both.",
+  inp: "One line with two integers.",
+  out: "Base value and derived value on separate lines.",
+  tests: ["10 20", "5 15"],
+  f: (s) => { const [a, b] = nums(s); return `Base: ${a}\nDerived: ${b}`; }
+},
+95: {
+  task: "Read an integer and print the overridden method result.",
+  inp: "One integer.",
+  out: "Value followed by the word Overridden.",
+  tests: ["10", "25", "-5"],
+  f: (s) => `Overridden: ${nums(s)[0]}`
+},
+96: {
+  task: "Read an integer and print a value returned by an interface implementation.",
+  inp: "One integer.",
+  out: "Value followed by Interface.",
+  tests: ["10", "20", "5"],
+  f: (s) => `Interface: ${nums(s)[0]}`
+},
+97: {
+  task: "Read an integer and print its value and its square.",
+  inp: "One integer.",
+  out: "Value and square on separate lines.",
+  tests: ["5", "10", "-3"],
+  f: (s) => { const n = nums(s)[0]; return `${n}\n${n * n}`; }
+},
+98: {
+  task: "Read two integers and safely divide the first by the second. Print Invalid divisor if the divisor is zero.",
+  inp: "One line with two integers.",
+  out: "The integer quotient or Invalid divisor.",
+  tests: ["10 2", "9 3", "5 0"],
+  f: (s) => { const [a, b] = nums(s); return b === 0 ? "Invalid divisor" : String(Math.trunc(a / b)); }
+},
+99: {
+  task: "Read n integers and store them in a list. Print the list elements.",
+  inp: "Line 1: n. Line 2: n integers.",
+  out: "List elements separated by spaces.",
+  tests: ["4\n10 20 30 40", "3\n5 6 7"],
+  f: (s) => join(arr2(s))
+},
+100: {
+  task: "Read n key-value pairs and print them in insertion order as key=value.",
+  inp: "Line 1: n. Following n lines contain a word key and an integer value.",
+  out: "One key=value pair per line.",
+  tests: ["3\napple 10\nbanana 20\nmango 30", "2\nJava 1\nPython 2"],
+  f: (s) => { const l = lines(s); const n = nums(l[0])[0]; return l.slice(1, n + 1).map(x => { const p = x.trim().split(/\s+/); return `${p[0]}=${p[1]}`; }).join("\n"); }
 };
