@@ -59,7 +59,7 @@ public final class App {
         try {
             String method = ex.getRequestMethod(), path = ex.getRequestURI().getPath();
             if (method.equals("GET") && path.equals("/api/status")) {
-                send(ex, 200, Map.of("java", CodeRunner.hasJava()));
+                send(ex, 200, Map.of("java", CodeRunner.hasJava(), "ai", Ai.configured()));
             } else if (method.equals("POST") && path.equals("/api/run")) {
                 Map<String, Object> data = body(ex);
                 if (data == null) return;
@@ -70,6 +70,13 @@ public final class App {
                 List<Map<String, Object>> tests = tests(data.get("tests"));
                 if (tests.isEmpty()) { send(ex, 400, CodeRunner.result(false, null, "No tests to run.")); return; }
                 guard(ex, data.get("code"), () -> CodeRunner.check((String) data.get("code"), tests));
+            } else if (method.equals("POST") && path.equals("/api/ai")) {
+                Map<String, Object> data = body(ex);
+                if (data == null) return;
+                String mode = data.get("mode") instanceof String m ? m : "ask";
+                String q = data.get("question") instanceof String x ? x : "";
+                String code = data.get("code") instanceof String x ? x : "";
+                send(ex, 200, Ai.answer(clientIp(ex), mode, q, code));
             } else if (method.equals("GET")) {
                 serveFile(ex, path);
             } else {
