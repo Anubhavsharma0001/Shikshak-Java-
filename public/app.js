@@ -380,3 +380,470 @@
     b.className = "btn " + (d ? "ok" : "ghost");
   }
 
+  
+  // ---------- API request helpers ----------
+  async function getJson(url, timeoutMs = 8000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      let data;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("Server returned an invalid response.");
+      }
+
+      if (!response.ok) {
+        throw new Error(data.output || `Server error: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      if (error.name === "AbortError") {
+        throw new Error("Server request timed out. Please try again.");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function post(url, body, timeoutMs = 20000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+
+      let data;
+
+      try {
+        data = await response.json();
+      } catch {
+        throw new Error("Server returned an invalid response.");
+      }
+
+      if (!response.ok) {
+        throw new Error(data.output || `Server error: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      if (error.name === "AbortError") {
+        throw new Error("Request timed out. Please try again.");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  const offlineMsg = (error) => {
+    if (error && error.message) return error.message;
+
+    return isLocal()
+      ? "Cannot reach the backend. Start it with: ./run.sh (Windows: run.bat)"
+      : "Could not connect to the Shikshak Java server. Please try again.";
+  };
+
+  // ---------- Run Java code ----------
+  async function run() {
+    const out = $("out");
+    const btn = $("runBtn");
+
+    if (!out || !btn || btn.disabled || !mainEd) return;
+
+    btn.disabled = true;
+    btn.textContent = "Running…";
+    out.className = "output empty";
+    out.textContent = "Compiling and running…";
+
+    try {
+      const j = await post(
+        "/api/run",
+        { code: mainEd.get(), input: $("stdin").value },
+        20000
+      );
+
+      out.className = "output" + (j.ok ? "" : " err");
+      out.textContent = (j.stage === "compile" ? "Compile error:\n" : "") + (j.output || "");
+
+      if (j.stage === "run") {
+        runs++;
+        store.set("sj_runs", runs);
+        markActive();
+        evaluateBadges();
+      }
+    } catch (error) {
+      out.className = "output err";
+      out.textContent = offlineMsg(error);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "▶ Run";
+    }
+  }
+
+  // ---------- Practice check ----------
+  async function check() {
+    const q = byId(current);
+    const p = q && PRACTICE[q.id];
+    const area = $("checkArea");
+    const btn = $("checkBtn");
+
+    if (!p || !area || !btn || btn.disabled || !practEd) return;
+
+    btn.disabled = true;
+    btn.textContent = "Checking…";
+    area.innerHTML = '<p class="muted">Compiling and running ' + p.tests.length + " tests…</p>";
+
+    try {
+      const j = await post(
+        "/api/check",
+        { code: practEd.get(), tests: p.tests },
+        60000
+      );
+
+      if (j.stage === "check") {
+        const all = j.passed === j.total;
+
+        let html = '<div class="verdict ' + (all ? "pass" : "fail") + '">' +
+          (all
+            ? "✅ All " + j.total + " tests passed. Well done!"
+            : "❌ " + j.passed + " of " + j.total + " tests passed") +
+          "</div>";
+
+        j.results.forEach((r, i) => {
+          html += '<div class="res"><span class="' + (r.pass ? "ok" : "no") + '">' +
+            (r.pass ? "✓" : "✗") + "</span><span>Test " + (i + 1) +
+            (i === 0 ? " (sample)" : "") + "</span></div>";
+        });
+
+        const bad = j.results.find((r) => !r.pass);
+
+        if (bad) {
+          html += '<div class="label">First failing test</div><div class="fmt"><b>Input</b><pre>' +
+            esc(bad.input === "" ? "(no input)" : bad.input) + "</pre></div>" +
+            '<div class="diff"><div><b>Expected</b><pre>' + esc(bad.expected) +
+            "</pre></div><div><b>Your output</b><pre>" +
+            esc(bad.got === "" ? "(nothing printed)" : bad.got) +
+            "</pre></div></div>";
+        }
+
+        area.innerHTML = html;
+        markActive();
+
+        if (all) {
+          if (!passed[q.id]) {
+            passed[q.id] = true;
+            store.set("sj_passed", passed);
+          }
+
+          if (!done[q.id]) {
+            done[q.id] = true;
+            store.set("sj_done", done);
+            updateDone();
+          }
+
+          const sum = document.querySelector("#practiceBox summary span");
+
+          if (sum && !sum.querySelector(".pill-ok")) {
+            sum.insertAdjacentHTML("beforeend", '<span class="pill-ok">✓ solved</span>');
+          }
+
+          renderList();
+        }
+
+        evaluateBadges();
+      } else {
+        area.innerHTML =
+          '<div class="verdict fail">' +
+          (j.stage === "compile" ? "Compile error" : "Could not check") +
+          '</div><pre class="output err">' +
+          esc(j.output || "Unknown problem") + "</pre>";
+      }
+    } catch (error) {
+      area.innerHTML = '<pre class="output err">' + esc(offlineMsg(error)) + "</pre>";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "✔ Check my solution";
+    }
+  }
+
+  // ---------- Roadmap, badges, backup ----------
+  function renderRoadmap() {
+    const ts = topicStats();
+
+    $("roadmap").innerHTML = TOPIC_ORDER.filter((t) => ts[t]).map((t, i) => {
+      const s = ts[t];
+      const pct = Math.round((s.done / s.total) * 100);
+
+      return '<div class="road"><div class="rt"><span><b>' +
+        (i + 1) + ". " + esc(t) + "</b></span><span>" +
+        s.done + " / " + s.total + " done</span></div>" +
+        '<div class="bar"><div style="width:' + pct + '%"></div></div></div>';
+    }).join("");
+
+    $("badges").innerHTML = BADGES.map((b) =>
+      '<div class="bdg' + (earned[b.id] ? "" : " off") + '"><b>' +
+      b.icon + " " + esc(b.name) + "</b>" + esc(b.desc) +
+      (earned[b.id] ? "<br><small>Earned " + earned[b.id] + "</small>" : "") +
+      "</div>"
+    ).join("");
+  }
+
+  $("roadBtn").onclick = () => {
+    renderRoadmap();
+    $("roadDlg").showModal();
+  };
+
+  $("roadClose").onclick = () => $("roadDlg").close();
+
+  $("continueBtn").onclick = () => {
+    const rank = (q) => {
+      const i = TOPIC_ORDER.indexOf(q.topic);
+      return i < 0 ? 99 : i;
+    };
+
+    const next = window.QUESTIONS
+      .slice()
+      .sort((a, b) => rank(a) - rank(b) || a.id - b.id)
+      .find((q) => !done[q.id]);
+
+    $("roadDlg").close();
+
+    if (next) openQuestion(next.id);
+    else toast("🏆 You finished every question!");
+  };
+
+  const KEYS = {
+    sj_done: () => done,
+    sj_seen: () => seen,
+    sj_edits: () => edits,
+    sj_custom: () => custom,
+    sj_passed: () => passed,
+    sj_days: () => days,
+    sj_badges: () => earned,
+    sj_runs: () => runs,
+    sj_current: () => current
+  };
+
+  $("exportBtn").onclick = () => {
+    const data = {};
+    Object.keys(KEYS).forEach((k) => (data[k] = KEYS[k]()));
+
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(
+      new Blob([JSON.stringify(data, null, 1)], { type: "application/json" })
+    );
+    a.download = "shikshak-java-progress.json";
+    a.click();
+
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+
+  $("importBtn").onclick = () => $("importFile").click();
+
+  $("importFile").onchange = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+
+    const r = new FileReader();
+
+    r.onload = () => {
+      try {
+        const d = JSON.parse(r.result);
+
+        if (!d || typeof d !== "object" || Array.isArray(d)) {
+          throw new Error("Invalid file");
+        }
+
+        Object.keys(KEYS).forEach((k) => {
+          if (k in d) store.set(k, d[k]);
+        });
+
+        location.reload();
+      } catch {
+        toast("That file is not a Shikshak Java progress file");
+      }
+    };
+
+    r.readAsText(f);
+  };
+
+  // ---------- AI tutor ----------
+  let aiMode = "ask";
+
+  const inlineMd = (t) =>
+    esc(t)
+      .replace(/`([^`]+)`/g, "<code>$1</code>")
+      .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+
+  function mdToHtml(text) {
+    return String(text).split(/```[a-zA-Z]*\n?/).map((part, i) => {
+      if (i % 2) {
+        return '<pre class="output">' + esc(part.replace(/\n$/, "")) + "</pre>";
+      }
+
+      return part.split("\n").map((line) => {
+        const t = line.trim();
+        if (!t) return "";
+
+        let m = t.match(/^(\d+)[.)]\s+(.*)$/);
+
+        if (m) {
+          return '<div class="ai-li"><b>' + m[1] +
+            ".</b><span>" + inlineMd(m[2]) + "</span></div>";
+        }
+
+        m = t.match(/^[-*•]\s+(.*)$/);
+
+        if (m) {
+          return '<div class="ai-li"><b>•</b><span>' +
+            inlineMd(m[1]) + "</span></div>";
+        }
+
+        return "<p>" + inlineMd(t) + "</p>";
+      }).join("");
+    }).join("");
+  }
+
+  function setAiMode(mode) {
+    aiMode = mode;
+
+    document.querySelectorAll(".aitab").forEach((t) =>
+      t.classList.toggle("active", t.dataset.mode === mode)
+    );
+
+    $("aiAskBox").classList.toggle("hidden", mode !== "ask");
+    $("aiReviewBox").classList.toggle("hidden", mode !== "review");
+    $("aiGo").textContent = mode === "ask" ? "Ask AI" : "Review my code";
+    $("aiOut").classList.add("hidden");
+  }
+
+  document.querySelectorAll(".aitab").forEach((t) =>
+    (t.onclick = () => setAiMode(t.dataset.mode))
+  );
+
+  document.querySelectorAll(".chip-btn").forEach((c) =>
+    (c.onclick = () => {
+      $("aiQ").value = c.textContent;
+      $("aiQ").focus();
+    })
+  );
+
+  $("aiBtn").onclick = () => {
+    const w = $("aiWarn");
+
+    if (!aiOk) {
+      w.textContent = isLocal()
+        ? "AI is not configured or the backend is unavailable. Check your AI provider settings."
+        : "AI is temporarily unavailable. Please try again shortly.";
+
+      w.classList.remove("hidden");
+    } else {
+      w.classList.add("hidden");
+    }
+
+    $("aiDlg").showModal();
+  };
+
+  $("aiClose").onclick = () => $("aiDlg").close();
+
+  $("aiUseEditor").onclick = () => {
+    const pb = $("practiceBox");
+    const ed = pb && pb.open && practEd ? practEd : mainEd;
+
+    if (ed) {
+      $("aiCode").value = ed.get();
+      toast("Code copied from your editor");
+    } else {
+      toast("Open a question first");
+    }
+  };
+
+  $("aiGo").onclick = async () => {
+    const out = $("aiOut");
+    const btn = $("aiGo");
+    const review = aiMode === "review";
+    const question = review ? $("aiTask").value : $("aiQ").value;
+    const code = review ? $("aiCode").value : "";
+
+    if (review ? !code.trim() : !question.trim()) {
+      toast(review ? "Paste your code first" : "Type your question first");
+      return;
+    }
+
+    btn.disabled = true;
+    $("aiBusy").textContent = "Thinking…";
+    out.className = "ai-out";
+    out.innerHTML = '<p class="muted">Thinking…</p>';
+
+    try {
+      const j = await post(
+        "/api/ai",
+        { mode: aiMode, question, code },
+        70000
+      );
+
+      if (j.ok) {
+        out.className = "ai-out";
+        out.innerHTML = mdToHtml(j.output || "");
+        markActive();
+      } else {
+        out.className = "ai-out err";
+        out.textContent = j.output || "Something went wrong.";
+      }
+    } catch (error) {
+      out.className = "ai-out err";
+      out.textContent = offlineMsg(error);
+    } finally {
+      btn.disabled = false;
+      $("aiBusy").textContent = "";
+    }
+  };
+
+  // ---------- Add own question ----------
+  $("addBtn").onclick = () => {
+    $("addForm").reset();
+    $("addDlg").showModal();
+  };
+
+  $("addForm").addEventListener("submit", (e) => {
+    const action = e.submitter && e.submitter.value;
+    if (action !== "ok") return;
+
+    const title = $("addTitle").value.trim();
+    if (!title) return;
+
+    const id = 1000 + custom.length + 1 + Math.floor(Math.random() * 1e6);
+
+    custom.push({
+      id,
+      custom: true,
+      topic: "My questions",
+      title,
+      intro: $("addNotes").value.trim() || "Your own question.",
+      levels: [{
+        x: "Write, edit and run your own solution here.",
+        c: $("addCode").value || "public class Main {\n    public static void main(String[] args) {\n        \n    }\n}\n",
+        i: ""
+      }],
+    });
+
+    store.set("sj_custom", custom);
+    renderList();
+    openQuestion(id);
+  });
+
+  updateChips();
+})();
+
+
