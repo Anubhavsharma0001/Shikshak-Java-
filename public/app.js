@@ -1,10 +1,10 @@
 
 (function () {
   const LEVEL_NAMES = [
-    "Level 1 · Basics first",
-    "Level 2 · Simple solution",
-    "Level 3 · Using methods",
-    "Level 4 · Advanced",
+    "Level 1 · STAGE 1",
+    "Level 2 · STAGE 2",
+    "Level 3 · STAGE 3",
+    "Level 4 · STAGE 4",
   ];
   const TAB_NAMES = ["1 · Basics", "2 · Solution", "3 · Methods", "4 · Advanced"];
   const TOPIC_ORDER = ["Basics", "Numbers", "Patterns", "Arrays", "Searching & Sorting", "Strings", "Recursion"];
