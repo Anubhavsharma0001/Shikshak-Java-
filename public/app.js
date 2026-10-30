@@ -8,7 +8,19 @@
 ];
 
 const TAB_NAMES = ["1 · Stage 1", "2 · Stage 2", "3 · Stage 3", "4 · Stage 4"];
-  const TOPIC_ORDER = ["Basics", "Numbers", "Patterns", "Arrays", "Searching & Sorting", "Strings", "Recursion"];
+const TOPIC_ORDER = [
+  "Basics",
+  "Numbers",
+  "Patterns",
+  "Arrays",
+  "Searching & Sorting",
+  "Strings",
+  "Recursion",
+  "Java Fundamentals",
+  "Operators, Conditions & Loops",
+  "Arrays & Strings",
+  "OOP & Advanced Java"
+];
   const STARTER = "import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        // write your solution here\n    }\n}\n";
 
   const store = {
