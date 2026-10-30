@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shikshak Java</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<button id="themeBtn" class="theme-btn" title="Switch light / dark theme" aria-label="Switch theme">☀️</button>
+
+<!-- WELCOME PAGE -->
+<section id="welcome" class="welcome">
+  <div class="welcome-card">
+    <div class="logo">☕</div>
+    <h1>Shikshak <span>Java</span></h1>
+    <p class="tag">Your Java teacher before DSA.</p>
+    <p class="lead">50 practice questions. Every question is taught step by step:
+      first the basics, then a simple solution, then methods, and finally the advanced version (like recursion).
+      Then try it yourself in the Practice box and get your answer checked automatically.</p>
+    <div class="steps">
+      <div><b>1</b><span>Basics first</span></div>
+      <div><b>2</b><span>Simple solution</span></div>
+      <div><b>3</b><span>Using methods</span></div>
+      <div><b>4</b><span>Advanced</span></div>
+    </div>
+    <button id="startBtn" class="btn big">Start practicing →</button>
+    <p id="statusLine" class="status">Checking code runner…</p>
+  </div>
+</section>
+
+<!-- MAIN APP -->
+<div id="app" class="app hidden">
+  <aside class="sidebar">
+    <div class="side-top">
+      <button id="homeBtn" class="brand">☕ Shikshak <span>Java</span></button>
+      <div class="chips"><span id="streakChip" class="chip">🔥 0-day streak</span><span id="badgeChip" class="chip">🏅 0 badges</span></div>
+      <div class="progress-wrap">
+        <div class="progress-text"><span id="progText">0 / 50 done</span></div>
+        <div class="bar"><div id="progBar"></div></div>
+      </div>
+      <input id="search" type="search" placeholder="Search questions…">
+    </div>
+    <nav id="list" class="list"></nav>
+    <div class="side-bottom">
+      <button id="roadBtn" class="btn ghost">🗺 Roadmap, badges &amp; backup</button>
+      <button id="addBtn" class="btn ghost">+ Add my own question</button>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <button id="menuBtn" class="menu-btn">☰ Questions</button>
+    <div id="lesson"></div>
+  </main>
+</div>
+
+<!-- ROADMAP DIALOG -->
+<dialog id="roadDlg" class="wide">
+  <h3>🗺 Your roadmap</h3>
+  <p class="muted small">Learn the topics in this order. Each bar shows the questions you marked done.</p>
+  <div id="roadmap"></div>
+  <div class="row"><button id="continueBtn" class="btn">Continue where I stopped →</button></div>
+  <h3>🏅 Badges</h3>
+  <div id="badges" class="badges"></div>
+  <h3>💾 Backup your progress</h3>
+  <p class="muted small">Progress is saved in this browser only. Download it to keep a copy or move to another device.</p>
+  <div class="row">
+    <button id="exportBtn" class="btn ghost">Download progress</button>
+    <button id="importBtn" class="btn ghost">Load progress file</button>
+    <input type="file" id="importFile" accept="application/json" class="hidden">
+  </div>
+  <div class="row end"><button id="roadClose" class="btn">Close</button></div>
+</dialog>
+<div id="toast" class="toast hidden"></div>
+
+<!-- ADD QUESTION DIALOG -->
+<dialog id="addDlg">
+  <form method="dialog" id="addForm">
+    <h3>Add your own question</h3>
+    <label>Question title
+      <input id="addTitle" required placeholder="e.g. Count words in a sentence">
+    </label>
+    <label>What it asks / notes (optional)
+      <textarea id="addNotes" rows="3" placeholder="Describe the question or write hints for yourself"></textarea>
+    </label>
+    <label>Your Java code (class must be Main or public class name)
+      <textarea id="addCode" rows="9" class="mono" placeholder="public class Main {&#10;    public static void main(String[] args) {&#10;        &#10;    }&#10;}"></textarea>
+    </label>
+    <div class="row end">
+      <button value="cancel" class="btn ghost" formnovalidate>Cancel</button>
+      <button value="ok" class="btn" id="addSave">Save question</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="questions1.js"></script>
+<script src="questions2.js"></script>
+<script src="questions3.js"></script>
+<script src="questions4.js"></script>
+<script src="questions5.js"></script>
+<script src="practice.js"></script>
+<script src="meta.js"></script>
+<script src="mistakes.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
