@@ -25,6 +25,7 @@
       <div><b>3</b><span>Using methods</span></div>
       <div><b>4</b><span>Advanced</span></div>
     </div>
+    <p class="muted small ai-note">🤖 New: ask the AI tutor any basic question, or paste your code and get it reviewed point by point.</p>
     <button id="startBtn" class="btn big">Start practicing →</button>
     <p id="statusLine" class="status">Checking code runner…</p>
   </div>
@@ -44,6 +45,7 @@
     </div>
     <nav id="list" class="list"></nav>
     <div class="side-bottom">
+      <button id="aiBtn" class="btn ghost ai-open">🤖 AI Tutor: ask &amp; review code</button>
       <button id="roadBtn" class="btn ghost">🗺 Roadmap, badges &amp; backup</button>
       <button id="addBtn" class="btn ghost">+ Add my own question</button>
     </div>
@@ -73,6 +75,43 @@
   <div class="row end"><button id="roadClose" class="btn">Close</button></div>
 </dialog>
 <div id="toast" class="toast hidden"></div>
+
+<!-- AI TUTOR DIALOG -->
+<dialog id="aiDlg" class="wide ai">
+  <h3>🤖 AI Tutor</h3>
+  <div class="tabs">
+    <button class="aitab active" data-mode="ask">💬 Ask a question</button>
+    <button class="aitab" data-mode="review">🔍 Review my code</button>
+  </div>
+  <p id="aiWarn" class="status bad hidden"></p>
+
+  <div id="aiAskBox">
+    <label>Ask any basic Java question
+      <textarea id="aiQ" rows="3" maxlength="1500" placeholder="e.g. What is the difference between == and equals()?"></textarea>
+    </label>
+    <div class="ai-chips">
+      <button type="button" class="chip-btn">What is a method in Java?</button>
+      <button type="button" class="chip-btn">How does a for loop work?</button>
+      <button type="button" class="chip-btn">What is recursion? Give a simple example</button>
+      <button type="button" class="chip-btn">Difference between array and ArrayList</button>
+    </div>
+  </div>
+
+  <div id="aiReviewBox" class="hidden">
+    <label>What is this code supposed to do? (optional)
+      <textarea id="aiTask" rows="2" maxlength="1500" placeholder="e.g. Check whether a number is prime"></textarea>
+    </label>
+    <label>Your Java code
+      <textarea id="aiCode" rows="10" maxlength="8000" class="mono" spellcheck="false" placeholder="Paste your code here"></textarea>
+    </label>
+    <div class="row"><button type="button" id="aiUseEditor" class="btn ghost">Use the code from my editor</button></div>
+  </div>
+
+  <div class="row"><button id="aiGo" class="btn">Ask AI</button><span id="aiBusy" class="muted small"></span></div>
+  <div id="aiOut" class="ai-out hidden"></div>
+  <p class="muted small">AI can make mistakes. Run your code and check important answers yourself.</p>
+  <div class="row end"><button id="aiClose" class="btn ghost">Close</button></div>
+</dialog>
 
 <!-- ADD QUESTION DIALOG -->
 <dialog id="addDlg">

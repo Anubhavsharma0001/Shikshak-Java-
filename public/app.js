@@ -25,6 +25,7 @@
   let runs = store.get("sj_runs", 0);
   let level = 0;
   let javaOk = true;
+  let aiOk = true;
   let mainEd = null, practEd = null;
 
   const $ = (id) => document.getElementById(id);
@@ -137,6 +138,7 @@
 
   fetch("/api/status").then((r) => r.json()).then((s) => {
     javaOk = s.java;
+    aiOk = !!s.ai;
     const el = $("statusLine");
     if (s.java) { el.textContent = "✓ Java code runner is ready"; el.className = "status good"; }
     else { el.textContent = "Java (JDK) not found. Install JDK 17+ and restart the server to run code."; el.className = "status bad"; }
@@ -464,6 +466,67 @@
       } catch { toast("That file is not a Shikshak Java progress file"); }
     };
     r.readAsText(f);
+  };
+
+  // ---------- AI tutor ----------
+  let aiMode = "ask";
+  const inlineMd = (t) => esc(t).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+  function mdToHtml(text) {
+    return String(text).split(/```[a-zA-Z]*\n?/).map((part, i) => {
+      if (i % 2) return '<pre class="output">' + esc(part.replace(/\n$/, "")) + "</pre>";
+      return part.split("\n").map((line) => {
+        const t = line.trim();
+        if (!t) return "";
+        let m = t.match(/^(\d+)[.)]\s+(.*)$/);
+        if (m) return '<div class="ai-li"><b>' + m[1] + ".</b><span>" + inlineMd(m[2]) + "</span></div>";
+        m = t.match(/^[-*•]\s+(.*)$/);
+        if (m) return '<div class="ai-li"><b>•</b><span>' + inlineMd(m[1]) + "</span></div>";
+        return "<p>" + inlineMd(t) + "</p>";
+      }).join("");
+    }).join("");
+  }
+  function setAiMode(mode) {
+    aiMode = mode;
+    document.querySelectorAll(".aitab").forEach((t) => t.classList.toggle("active", t.dataset.mode === mode));
+    $("aiAskBox").classList.toggle("hidden", mode !== "ask");
+    $("aiReviewBox").classList.toggle("hidden", mode !== "review");
+    $("aiGo").textContent = mode === "ask" ? "Ask AI" : "Review my code";
+    $("aiOut").classList.add("hidden");
+  }
+  document.querySelectorAll(".aitab").forEach((t) => (t.onclick = () => setAiMode(t.dataset.mode)));
+  document.querySelectorAll(".chip-btn").forEach((c) => (c.onclick = () => { $("aiQ").value = c.textContent; $("aiQ").focus(); }));
+  $("aiBtn").onclick = () => {
+    const w = $("aiWarn");
+    if (!aiOk) {
+      w.textContent = isLocal() ? "AI is not switched on. Set GEMINI_API_KEY (free) and restart the server." : "AI works only when the site is running with its backend and an AI key.";
+      w.classList.remove("hidden");
+    } else w.classList.add("hidden");
+    $("aiDlg").showModal();
+  };
+  $("aiClose").onclick = () => $("aiDlg").close();
+  $("aiUseEditor").onclick = () => {
+    const pb = $("practiceBox");
+    const ed = pb && pb.open && practEd ? practEd : mainEd;
+    if (ed) { $("aiCode").value = ed.get(); toast("Code copied from your editor"); }
+    else toast("Open a question first");
+  };
+  $("aiGo").onclick = async () => {
+    const out = $("aiOut"), btn = $("aiGo");
+    const review = aiMode === "review";
+    const question = review ? $("aiTask").value : $("aiQ").value;
+    const code = review ? $("aiCode").value : "";
+    if (review ? !code.trim() : !question.trim()) { toast(review ? "Paste your code first" : "Type your question first"); return; }
+    btn.disabled = true; $("aiBusy").textContent = "Thinking…";
+    out.className = "ai-out"; out.innerHTML = '<p class="muted">Thinking…</p>';
+    try {
+      const j = await post("/api/ai", { mode: aiMode, question, code });
+      if (j.ok) { out.className = "ai-out"; out.innerHTML = mdToHtml(j.output); markActive(); }
+      else { out.className = "ai-out err"; out.textContent = j.output || "Something went wrong."; }
+    } catch {
+      out.className = "ai-out err";
+      out.textContent = isLocal() ? "Cannot reach the backend. Start it with:  ./run.sh  (Windows: run.bat)" : "The AI tutor needs the backend. It does not work on the lessons-only website.";
+    }
+    btn.disabled = false; $("aiBusy").textContent = "";
   };
 
   // ---------- Add own question ----------

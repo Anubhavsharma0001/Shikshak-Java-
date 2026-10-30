@@ -204,3 +204,21 @@ dialog.wide { width: min(680px, 94vw); max-height: 90vh; overflow: auto; }
 :root[data-theme="light"] .cm-s-default .cm-comment { color: #6e7781; } :root[data-theme="light"] .cm-s-default .cm-def { color: #8250df; }
 .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .dot.Easy { background: var(--ok); } .dot.Medium { background: var(--accent); } .dot.Hard { background: var(--err); }
+
+/* AI tutor */
+.aitab { background: var(--panel2); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 7px 14px; font-size: 14px; cursor: pointer; font-family: var(--sans); }
+.aitab:hover { color: var(--text); }
+.aitab.active { background: var(--accent); color: #1a1208; border-color: var(--accent); font-weight: 700; }
+:root[data-theme="light"] .aitab.active { color: #fff; }
+.side-bottom .ai-open { border-color: var(--accent); color: var(--accent2); }
+.ai-note { margin: 14px 0 0; }
+.ai-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+.chip-btn { background: var(--panel2); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 4px 10px; font-size: 12px; cursor: pointer; font-family: var(--sans); }
+.chip-btn:hover { color: var(--text); border-color: var(--accent); }
+.ai-out { background: var(--panel2); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; padding: 12px 14px; margin: 6px 0 12px; max-height: 46vh; overflow: auto; }
+.ai-out p { margin: 0 0 8px; }
+.ai-out .ai-li { display: flex; gap: 8px; margin: 0 0 8px; }
+.ai-out .ai-li b:first-child { color: var(--accent2); min-width: 1.4em; }
+.ai-out pre.output { margin: 8px 0; }
+.ai-out code { font-family: var(--mono); background: var(--code); padding: 1px 5px; border-radius: 4px; font-size: .92em; }
+.ai-out.err { border-left-color: var(--err); color: var(--err); }
