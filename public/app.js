@@ -1,3 +1,4 @@
+
 (function () {
   const LEVEL_NAMES = [
     "Level 1 · Basics first",
@@ -19,9 +20,9 @@
   let seen = store.get("sj_seen", {});
   let edits = store.get("sj_edits", {});
   let current = store.get("sj_current", 1);
-  let passed = store.get("sj_passed", {});       // practice questions solved
-  let days = store.get("sj_days", []);            // days with activity (YYYY-MM-DD)
-  let earned = store.get("sj_badges", {});        // badge id -> date
+  let passed = store.get("sj_passed", {});
+  let days = store.get("sj_days", []);
+  let earned = store.get("sj_badges", {});
   let runs = store.get("sj_runs", 0);
   let level = 0;
   let javaOk = true;
@@ -75,7 +76,7 @@
   function streak() {
     const set = new Set(days);
     const d = new Date();
-    if (!set.has(dayStr(d))) d.setDate(d.getDate() - 1);   // today not practiced yet: streak is still alive until midnight
+    if (!set.has(dayStr(d))) d.setDate(d.getDate() - 1);
     let n = 0;
     while (set.has(dayStr(d))) { n++; d.setDate(d.getDate() - 1); }
     return n;
@@ -136,416 +137,27 @@
   $("homeBtn").onclick = () => { $("app").classList.add("hidden"); $("welcome").classList.remove("hidden"); };
   $("menuBtn").onclick = () => document.querySelector(".sidebar").classList.toggle("open");
 
-  fetch("/api/status").then((r) => r.json()).then((s) => {
-    javaOk = s.java;
-    aiOk = !!s.ai;
+  // ---------- Server status ----------
+  async function loadStatus() {
     const el = $("statusLine");
-    if (s.java) { el.textContent = "✓ Java code runner is ready"; el.className = "status good"; }
-    else { el.textContent = "Java (JDK) not found. Install JDK 17+ and restart the server to run code."; el.className = "status bad"; }
-  }).catch(() => {
-    const el = $("statusLine");
-    el.textContent = isLocal()
-      ? "Backend not reachable. Start it with: ./run.sh (Windows: run.bat)"
-      : "Online mode: lessons work here. Run and Practice checks work only on your computer (./run.sh).";
-    el.className = "status bad";
-    javaOk = false;
-  });
-
-  // ---------- Sidebar ----------
-  function renderList() {
-    const q = $("search").value.trim().toLowerCase();
-    const list = $("list");
-    list.innerHTML = "";
-    let lastTopic = null;
-    allQuestions().forEach((qu) => {
-      if (q && !(qu.title.toLowerCase().includes(q) || (qu.topic || "").toLowerCase().includes(q))) return;
-      if (qu.topic !== lastTopic) {
-        lastTopic = qu.topic;
-        const t = document.createElement("div");
-        t.className = "topic";
-        t.textContent = qu.topic;
-        list.appendChild(t);
-      }
-      const m = META[qu.id];
-      const b = document.createElement("button");
-      b.className = "item" + (qu.id === current ? " active" : "");
-      b.innerHTML = '<span class="num">' + (qu.custom ? "★" : qu.id) + '</span><span class="name">' + esc(qu.title) + "</span>" +
-        (m ? '<span class="dot ' + m[0] + '" title="' + m[0] + '"></span>' : "") +
-        (done[qu.id] ? '<span class="tick">✓</span>' : "");
-      b.onclick = () => { openQuestion(qu.id); document.querySelector(".sidebar").classList.remove("open"); };
-      list.appendChild(b);
-    });
-    const total = allQuestions().length;
-    const n = allQuestions().filter((x) => done[x.id]).length;
-    $("progText").textContent = n + " / " + total + " done";
-    $("progBar").style.width = (total ? (n / total) * 100 : 0) + "%";
-  }
-  $("search").oninput = renderList;
-
-  // ---------- Editor (CodeMirror, falls back to a plain textarea) ----------
-  function makeEditor(host, value, onChange, onRun) {
-    host.innerHTML = "";
-    if (window.CodeMirror) {
-      const cm = window.CodeMirror(host, {
-        value, mode: "text/x-java", lineNumbers: true, matchBrackets: true, autoCloseBrackets: true,
-        indentUnit: 4, tabSize: 4, indentWithTabs: false, lineWrapping: false,
-        extraKeys: {
-          Tab: (c) => (c.somethingSelected() ? c.indentSelection("add") : c.replaceSelection("    ", "end")),
-          "Shift-Tab": (c) => c.indentSelection("subtract"),
-          "Ctrl-Enter": onRun, "Cmd-Enter": onRun,
-        },
-      });
-      cm.on("change", () => onChange(cm.getValue()));
-      setTimeout(() => cm.refresh(), 0);
-      return { get: () => cm.getValue(), set: (v) => cm.setValue(v) };
-    }
-    const ta = document.createElement("textarea");
-    ta.className = "code"; ta.spellcheck = false; ta.value = value;
-    ta.oninput = () => onChange(ta.value);
-    ta.onkeydown = (e) => {
-      if (e.key === "Tab") {
-        e.preventDefault();
-        const s = ta.selectionStart;
-        ta.value = ta.value.slice(0, s) + "    " + ta.value.slice(ta.selectionEnd);
-        ta.selectionStart = ta.selectionEnd = s + 4;
-        onChange(ta.value);
-      } else if ((e.ctrlKey || e.metaKey) && e.key === "Enter") onRun();
-    };
-    host.appendChild(ta);
-    return { get: () => ta.value, set: (v) => (ta.value = v) };
-  }
-
-  function copyText(text) {
-    const ok = () => toast("Code copied");
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, fallback);
-    else fallback();
-    function fallback() {
-      const t = document.createElement("textarea");
-      t.value = text; document.body.appendChild(t); t.select();
-      try { document.execCommand("copy"); ok(); } catch { toast("Press Ctrl+C to copy"); }
-      t.remove();
-    }
-  }
-
-  // ---------- Lesson ----------
-  function openQuestion(id, lvl) {
-    current = id;
-    store.set("sj_current", id);
-    level = lvl || 0;
-    renderList();
-    renderLesson();
-    $("main").scrollTop = 0;
-  }
-
-  function codeKey(q, l) { return q.id + ":" + l; }
-
-  function practiceHtml(q) {
-    const p = PRACTICE[q.id];
-    if (!p || q.custom) return "";
-    const sample = p.tests[0];
-    const hidden = p.tests.length - 1;
-    return '<details class="panel" id="practiceBox"' + (passed[q.id] ? "" : "") + "><summary><span>🎯 Practice: solve it yourself" +
-      (passed[q.id] ? '<span class="pill-ok">✓ solved</span>' : "") + "</span></summary><div class=\"inner\">" +
-      "<p><b>Task:</b> " + esc(p.task) + "</p>" +
-      '<div class="fmt"><b>Input</b><pre>' + esc(p.inp) + '</pre></div>' +
-      '<div class="fmt"><b>Output</b><pre>' + esc(p.out) + '</pre></div>' +
-      '<div class="fmt"><b>Sample</b> (input, then the expected output)<pre>' + esc(sample.input === "" ? "(no input)" : sample.input) + "\n---\n" + esc(sample.expected) + "</pre></div>" +
-      '<p class="muted small">Your program is checked on ' + p.tests.length + " tests" + (hidden > 0 ? " (the sample and " + hidden + " more). " : ". ") + "Output must match exactly (extra spaces at the end of a line are ignored).</p>" +
-      '<div class="editor-head"><span>Your solution (Main.java)</span><span><button class="btn ghost" id="pResetBtn">Reset</button></span></div>' +
-      '<div id="practHost"></div>' +
-      '<div class="row"><button class="btn" id="checkBtn">✔ Check my solution</button><button class="btn ghost" id="hintBtn">💡 Show a hint</button></div>' +
-      '<div id="hintArea"></div><div id="checkArea" class="results"></div>' +
-      "</div></details>";
-  }
-
-  function mistakesHtml(q) {
-    const list = MISTAKES[q.topic];
-    if (!list || q.custom) return "";
-    return '<details class="panel"><summary><span>⚠️ Common mistakes in this topic</span></summary><div class="inner">' +
-      list.map((m) => '<div class="mistake"><h4>' + esc(m.t) + "</h4><pre>" + esc(m.w) + "</pre><p>" + esc(m.why) + "</p></div>").join("") +
-      "</div></details>";
-  }
-
-  function renderLesson() {
-    const q = byId(current);
-    if (!q) return;
-    const lv = q.levels[level];
-    const key = codeKey(q, level);
-    seen[key] = true; store.set("sj_seen", seen);
-    const code = edits[key] != null ? edits[key] : lv.c;
-    const m = META[q.id];
-
-    const tabs = q.levels.map((_, i) =>
-      '<button class="tab' + (i === level ? " active" : "") + (seen[codeKey(q, i)] && i !== level ? " seen" : "") + '" data-i="' + i + '">' + (q.custom ? "Code" : TAB_NAMES[i]) + "</button>"
-    ).join("");
-    const ids = allQuestions().map((x) => x.id);
-    const idx = ids.indexOf(q.id);
-    const cx = m && level === q.levels.length - 1 && q.levels.length > 1
-      ? '<div class="cx"><span>⏱ Time: <b>' + esc(m[1]) + "</b></span><span>💾 Extra space: <b>" + esc(m[2]) + "</b></span></div>" : "";
-
-    $("lesson").innerHTML =
-      '<div class="lesson">' +
-      '<div class="crumb">' + esc(q.topic) + (q.custom ? " · yours" : " · Question " + q.id + " of " + window.QUESTIONS.length) +
-      (m ? '<span class="badge-pill ' + m[0] + '">' + m[0] + "</span>" : "") + "</div>" +
-      "<h2>" + esc(q.title) + "</h2>" +
-      '<div class="intro">' + rich(q.intro || "") + "</div>" +
-      '<div class="tabs">' + tabs + "</div>" +
-      '<div class="explain"><div class="lvl-name">' + (q.custom ? "Your code" : LEVEL_NAMES[level]) + "</div>" + rich(lv.x || "") + "</div>" +
-      cx +
-      '<div class="editor">' +
-      '<div class="editor-head"><span>Main.java (you can edit this and run it)</span><span><button class="btn ghost" id="copyBtn">Copy code</button> <button class="btn ghost" id="resetBtn">Reset code</button></span></div>' +
-      '<div id="mainHost"></div>' +
-      '<div class="label">Input for the program (what you would type on the keyboard). Leave empty if the code does not read input.</div>' +
-      '<textarea class="stdin" id="stdin" rows="2" spellcheck="false"></textarea>' +
-      '<div class="row"><button class="btn" id="runBtn">▶ Run</button>' +
-      '<button class="btn ghost" id="doneBtn"></button></div>' +
-      '<div class="label">Output</div><pre class="output empty" id="out">Press Run to see the output.</pre>' +
-      "</div>" +
-      practiceHtml(q) + mistakesHtml(q) +
-      '<div class="pager"><button class="btn ghost" id="prevQ"' + (idx <= 0 ? " disabled" : "") + '>← Previous question</button>' +
-      '<button class="btn ghost" id="nextQ"' + (idx >= ids.length - 1 ? " disabled" : "") + ">Next question →</button></div>" +
-      "</div>";
-
-    mainEd = makeEditor($("mainHost"), code, (v) => { edits[key] = v; store.set("sj_edits", edits); }, run);
-    $("stdin").value = lv.i || "";
-    updateDone();
-
-    document.querySelectorAll(".tab").forEach((t) => (t.onclick = () => openQuestion(q.id, +t.dataset.i)));
-    $("copyBtn").onclick = () => copyText(mainEd.get());
-    $("resetBtn").onclick = () => { delete edits[key]; store.set("sj_edits", edits); mainEd.set(lv.c); };
-    $("runBtn").onclick = run;
-    $("doneBtn").onclick = () => {
-      done[q.id] = !done[q.id]; store.set("sj_done", done);
-      if (done[q.id]) markActive();
-      updateDone(); renderList(); evaluateBadges();
-    };
-    $("prevQ").onclick = () => openQuestion(ids[idx - 1]);
-    $("nextQ").onclick = () => openQuestion(ids[idx + 1]);
-
-    if (PRACTICE[q.id] && !q.custom) setupPractice(q);
-  }
-
-  function setupPractice(q) {
-    const p = PRACTICE[q.id];
-    const pkey = "p" + q.id;
-    practEd = makeEditor($("practHost"), edits[pkey] != null ? edits[pkey] : STARTER,
-      (v) => { edits[pkey] = v; store.set("sj_edits", edits); }, check);
-    $("pResetBtn").onclick = () => { delete edits[pkey]; store.set("sj_edits", edits); practEd.set(STARTER); };
-    $("checkBtn").onclick = check;
-
-    // hints appear one at a time, built from the lesson levels
-    const titles = ["Hint 1 · the basic idea", "Hint 2 · the approach", "Hint 3 · put it in a method"];
-    const hints = [0, 1, 2].filter((i) => q.levels[i] && q.levels[i].x).map((i) => ({ t: titles[i], x: q.levels[i].x }));
-    const solution = q.levels[Math.min(2, q.levels.length - 1)].c;
-    let shown = 0;
-    $("hintBtn").onclick = () => {
-      if (shown < hints.length) {
-        const h = hints[shown++];
-        $("hintArea").insertAdjacentHTML("beforeend", '<div class="hint"><b>' + esc(h.t) + "</b>" + rich(h.x) + "</div>");
-        if (shown === hints.length) $("hintBtn").textContent = "👀 Show full solution";
+    try {
+      const s = await getJson("/api/status", 8000);
+      javaOk = !!s.java;
+      aiOk = !!s.ai;
+      if (javaOk) {
+        el.textContent = "✓ Online Java code runner is ready";
+        el.className = "status good";
       } else {
-        $("hintArea").insertAdjacentHTML("beforeend", '<div class="hint"><b>Full solution (Level 3 code)</b></div><pre class="output">' + esc(solution) + "</pre>");
-        $("hintBtn").disabled = true;
-      }
-    };
-    void p;
-  }
-
-  function updateDone() {
-    const b = $("doneBtn");
-    if (!b) return;
-    const d = done[current];
-    b.textContent = d ? "✓ Done (click to undo)" : "Mark question as done";
-    b.className = "btn " + (d ? "ok" : "ghost");
-  }
-
-  async function post(url, body) {
-    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    return r.json();
-  }
-  const offlineMsg = () => isLocal()
-    ? "Cannot reach the backend. Start it with:  ./run.sh  (Windows: run.bat)"
-    : "Run works only when Shikshak Java is started on your own computer (./run.sh).\n\nOn this website you can read the lessons and copy the code.\nTo test it online, paste the code into https://onecompiler.com/java";
-
-  async function run() {
-    const out = $("out"), btn = $("runBtn");
-    if (!out || btn.disabled) return;
-    btn.disabled = true; btn.textContent = "Running…";
-    out.className = "output empty"; out.textContent = "Compiling and running…";
-    try {
-      const j = await post("/api/run", { code: mainEd.get(), input: $("stdin").value });
-      out.className = "output" + (j.ok ? "" : " err");
-      out.textContent = (j.stage === "compile" ? "Compile error:\n" : "") + j.output;
-      if (j.stage === "run") { runs++; store.set("sj_runs", runs); markActive(); evaluateBadges(); }
-    } catch {
-      out.className = "output err";
-      out.textContent = offlineMsg();
-    }
-    btn.disabled = false; btn.textContent = "▶ Run";
-  }
-
-  async function check() {
-    const q = byId(current), p = q && PRACTICE[q.id];
-    const area = $("checkArea"), btn = $("checkBtn");
-    if (!p || !area || btn.disabled) return;
-    btn.disabled = true; btn.textContent = "Checking…";
-    area.innerHTML = '<p class="muted">Compiling and running ' + p.tests.length + " tests…</p>";
-    try {
-      const j = await post("/api/check", { code: practEd.get(), tests: p.tests });
-      if (j.stage === "check") {
-        const all = j.passed === j.total;
-        let html = '<div class="verdict ' + (all ? "pass" : "fail") + '">' + (all ? "✅ All " + j.total + " tests passed. Well done!" : "❌ " + j.passed + " of " + j.total + " tests passed") + "</div>";
-        j.results.forEach((r, i) => {
-          html += '<div class="res"><span class="' + (r.pass ? "ok" : "no") + '">' + (r.pass ? "✓" : "✗") + "</span><span>Test " + (i + 1) + (i === 0 ? " (sample)" : "") + "</span></div>";
-        });
-        const bad = j.results.find((r) => !r.pass);
-        if (bad) {
-          html += '<div class="label">First failing test</div><div class="fmt"><b>Input</b><pre>' + esc(bad.input === "" ? "(no input)" : bad.input) + "</pre></div>" +
-            '<div class="diff"><div><b>Expected</b><pre>' + esc(bad.expected) + "</pre></div><div><b>Your output</b><pre>" + esc(bad.got === "" ? "(nothing printed)" : bad.got) + "</pre></div></div>";
-        }
-        area.innerHTML = html;
-        markActive();
-        if (all) {
-          if (!passed[q.id]) { passed[q.id] = true; store.set("sj_passed", passed); }
-          if (!done[q.id]) { done[q.id] = true; store.set("sj_done", done); updateDone(); }
-          const sum = document.querySelector("#practiceBox summary span");
-          if (sum && !sum.querySelector(".pill-ok")) sum.insertAdjacentHTML("beforeend", '<span class="pill-ok">✓ solved</span>');
-          renderList();
-        }
-        evaluateBadges();
-      } else {
-        area.innerHTML = '<div class="verdict fail">' + (j.stage === "compile" ? "Compile error" : "Could not check") + '</div><pre class="output err">' + esc(j.output || "Unknown problem") + "</pre>";
+        el.textContent = "Java code execution is temporarily unavailable.";
+        el.className = "status bad";
       }
     } catch {
-      area.innerHTML = '<pre class="output err">' + esc(offlineMsg().replace("Run works", "Checking works")) + "</pre>";
+      el.textContent = isLocal()
+        ? "Backend not reachable. Start it with: ./run.sh (Windows: run.bat)"
+        : "Could not connect to the Shikshak Java server. Please refresh and try again.";
+      el.className = "status bad";
+      javaOk = false;
+      aiOk = false;
     }
-    btn.disabled = false; btn.textContent = "✔ Check my solution";
   }
-
-  // ---------- Roadmap, badges, backup ----------
-  function renderRoadmap() {
-    const ts = topicStats();
-    $("roadmap").innerHTML = TOPIC_ORDER.filter((t) => ts[t]).map((t, i) => {
-      const s = ts[t], pct = Math.round((s.done / s.total) * 100);
-      return '<div class="road"><div class="rt"><span><b>' + (i + 1) + ". " + esc(t) + "</b></span><span>" + s.done + " / " + s.total + " done</span></div>" +
-        '<div class="bar"><div style="width:' + pct + '%"></div></div></div>';
-    }).join("");
-    $("badges").innerHTML = BADGES.map((b) =>
-      '<div class="bdg' + (earned[b.id] ? "" : " off") + '"><b>' + b.icon + " " + esc(b.name) + "</b>" + esc(b.desc) + (earned[b.id] ? "<br><small>Earned " + earned[b.id] + "</small>" : "") + "</div>"
-    ).join("");
-  }
-  $("roadBtn").onclick = () => { renderRoadmap(); $("roadDlg").showModal(); };
-  $("roadClose").onclick = () => $("roadDlg").close();
-  $("continueBtn").onclick = () => {
-    const rank = (q) => { const i = TOPIC_ORDER.indexOf(q.topic); return i < 0 ? 99 : i; };
-    const next = window.QUESTIONS.slice().sort((a, b) => rank(a) - rank(b) || a.id - b.id).find((q) => !done[q.id]);
-    $("roadDlg").close();
-    if (next) openQuestion(next.id); else toast("🏆 You finished every question!");
-  };
-  const KEYS = { sj_done: () => done, sj_seen: () => seen, sj_edits: () => edits, sj_custom: () => custom, sj_passed: () => passed, sj_days: () => days, sj_badges: () => earned, sj_runs: () => runs, sj_current: () => current };
-  $("exportBtn").onclick = () => {
-    const data = {};
-    Object.keys(KEYS).forEach((k) => (data[k] = KEYS[k]()));
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: "application/json" }));
-    a.download = "shikshak-java-progress.json";
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-  };
-  $("importBtn").onclick = () => $("importFile").click();
-  $("importFile").onchange = (e) => {
-    const f = e.target.files[0];
-    if (!f) return;
-    const r = new FileReader();
-    r.onload = () => {
-      try {
-        const d = JSON.parse(r.result);
-        if (!d || typeof d !== "object" || Array.isArray(d)) throw new Error("bad");
-        Object.keys(KEYS).forEach((k) => { if (k in d) store.set(k, d[k]); });
-        location.reload();
-      } catch { toast("That file is not a Shikshak Java progress file"); }
-    };
-    r.readAsText(f);
-  };
-
-  // ---------- AI tutor ----------
-  let aiMode = "ask";
-  const inlineMd = (t) => esc(t).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
-  function mdToHtml(text) {
-    return String(text).split(/```[a-zA-Z]*\n?/).map((part, i) => {
-      if (i % 2) return '<pre class="output">' + esc(part.replace(/\n$/, "")) + "</pre>";
-      return part.split("\n").map((line) => {
-        const t = line.trim();
-        if (!t) return "";
-        let m = t.match(/^(\d+)[.)]\s+(.*)$/);
-        if (m) return '<div class="ai-li"><b>' + m[1] + ".</b><span>" + inlineMd(m[2]) + "</span></div>";
-        m = t.match(/^[-*•]\s+(.*)$/);
-        if (m) return '<div class="ai-li"><b>•</b><span>' + inlineMd(m[1]) + "</span></div>";
-        return "<p>" + inlineMd(t) + "</p>";
-      }).join("");
-    }).join("");
-  }
-  function setAiMode(mode) {
-    aiMode = mode;
-    document.querySelectorAll(".aitab").forEach((t) => t.classList.toggle("active", t.dataset.mode === mode));
-    $("aiAskBox").classList.toggle("hidden", mode !== "ask");
-    $("aiReviewBox").classList.toggle("hidden", mode !== "review");
-    $("aiGo").textContent = mode === "ask" ? "Ask AI" : "Review my code";
-    $("aiOut").classList.add("hidden");
-  }
-  document.querySelectorAll(".aitab").forEach((t) => (t.onclick = () => setAiMode(t.dataset.mode)));
-  document.querySelectorAll(".chip-btn").forEach((c) => (c.onclick = () => { $("aiQ").value = c.textContent; $("aiQ").focus(); }));
-  $("aiBtn").onclick = () => {
-    const w = $("aiWarn");
-    if (!aiOk) {
-      w.textContent = isLocal() ? "AI is not switched on. Set GEMINI_API_KEY (free) and restart the server." : "AI works only when the site is running with its backend and an AI key.";
-      w.classList.remove("hidden");
-    } else w.classList.add("hidden");
-    $("aiDlg").showModal();
-  };
-  $("aiClose").onclick = () => $("aiDlg").close();
-  $("aiUseEditor").onclick = () => {
-    const pb = $("practiceBox");
-    const ed = pb && pb.open && practEd ? practEd : mainEd;
-    if (ed) { $("aiCode").value = ed.get(); toast("Code copied from your editor"); }
-    else toast("Open a question first");
-  };
-  $("aiGo").onclick = async () => {
-    const out = $("aiOut"), btn = $("aiGo");
-    const review = aiMode === "review";
-    const question = review ? $("aiTask").value : $("aiQ").value;
-    const code = review ? $("aiCode").value : "";
-    if (review ? !code.trim() : !question.trim()) { toast(review ? "Paste your code first" : "Type your question first"); return; }
-    btn.disabled = true; $("aiBusy").textContent = "Thinking…";
-    out.className = "ai-out"; out.innerHTML = '<p class="muted">Thinking…</p>';
-    try {
-      const j = await post("/api/ai", { mode: aiMode, question, code });
-      if (j.ok) { out.className = "ai-out"; out.innerHTML = mdToHtml(j.output); markActive(); }
-      else { out.className = "ai-out err"; out.textContent = j.output || "Something went wrong."; }
-    } catch {
-      out.className = "ai-out err";
-      out.textContent = isLocal() ? "Cannot reach the backend. Start it with:  ./run.sh  (Windows: run.bat)" : "The AI tutor needs the backend. It does not work on the lessons-only website.";
-    }
-    btn.disabled = false; $("aiBusy").textContent = "";
-  };
-
-  // ---------- Add own question ----------
-  $("addBtn").onclick = () => { $("addForm").reset(); $("addDlg").showModal(); };
-  $("addForm").addEventListener("submit", (e) => {
-    const action = e.submitter && e.submitter.value;
-    if (action !== "ok") return;
-    const title = $("addTitle").value.trim();
-    if (!title) return;
-    const id = 1000 + custom.length + 1 + Math.floor(Math.random() * 1e6);
-    custom.push({
-      id, custom: true, topic: "My questions", title,
-      intro: $("addNotes").value.trim() || "Your own question.",
-      levels: [{ x: "Write, edit and run your own solution here.", c: $("addCode").value || "public class Main {\n    public static void main(String[] args) {\n        \n    }\n}\n", i: "" }],
-    });
-    store.set("sj_custom", custom);
-    renderList();
-    openQuestion(id);
-  });
-
-  updateChips();
-})();
+  loadStatus();
