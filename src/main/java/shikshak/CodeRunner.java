@@ -1,3 +1,4 @@
+
 package shikshak;
 
 import java.io.IOException;
@@ -16,166 +17,492 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-/** Compiles and runs student Java code in a separate JVM process, with time and memory limits. */
+/**
+ * Compiles and runs student Java code in a separate JVM process.
+ * Includes execution time limits and capped output.
+ *
+ * IMPORTANT:
+ * A separate JVM is NOT a security sandbox.
+ * Public deployment requires OS-level isolation.
+ */
 final class CodeRunner {
+
     static final int MAX_OUTPUT = 20000;
-    private static final Pattern CLASS_NAME = Pattern.compile("public\\s+(?:final\\s+)?class\\s+([A-Za-z_]\\w*)");
+
+    private static final Pattern CLASS_NAME =
+            Pattern.compile("public\\s+(?:final\\s+)?class\\s+([A-Za-z_]\\w*)");
 
     record Compiled(Path dir, String cls) {
-        void cleanup() { deleteQuietly(dir); }
+        void cleanup() {
+            deleteQuietly(dir);
+        }
     }
+
     record Exec(boolean ok, boolean timedOut, String output) {}
 
     private static ProcessBuilder builder(List<String> cmd, Path dir) {
-        ProcessBuilder pb = new ProcessBuilder(cmd).directory(dir.toFile()).redirectErrorStream(true);
-        pb.environment().clear();                      // no secrets are passed to student code
+        ProcessBuilder pb = new ProcessBuilder(cmd)
+                .directory(dir.toFile())
+                .redirectErrorStream(true);
+
+        // Do not pass application secrets to student programs.
+        pb.environment().clear();
+
         String path = System.getenv("PATH");
-        if (path != null) pb.environment().put("PATH", path);
+
+        if (path != null) {
+            pb.environment().put("PATH", path);
+        }
+
         pb.environment().put("LANG", "C.UTF-8");
+
         return pb;
     }
 
-    /** Is a JDK (javac) available? Cached for a few seconds. */
+    // ---------- Java availability ----------
+
     private static volatile long checkedAt;
     private static volatile boolean javaOk;
+
     static boolean hasJava() {
         long now = System.currentTimeMillis();
-        if (now - checkedAt < 10_000) return javaOk;
+
+        if (now - checkedAt < 10_000) {
+            return javaOk;
+        }
+
         try {
-            Process p = new ProcessBuilder("javac", "-version").redirectErrorStream(true).start();
-            p.getInputStream().readAllBytes();
-            javaOk = p.waitFor(10, TimeUnit.SECONDS) && p.exitValue() == 0;
+            Process p = new ProcessBuilder("javac", "-version")
+                    .redirectErrorStream(true)
+                    .start();
+
+            Thread reader = new Thread(() -> {
+                try {
+                    readCapped(p.getInputStream(), 2000);
+                } catch (IOException ignored) {
+                }
+            });
+
+            reader.setDaemon(true);
+            reader.start();
+
+            boolean finished = p.waitFor(10, TimeUnit.SECONDS);
+
+            if (!finished) {
+                destroyProcessTree(p);
+                p.waitFor();
+            }
+
+            javaOk = finished && p.exitValue() == 0;
+
+            reader.join(1000);
+
         } catch (Exception e) {
             javaOk = false;
         }
-        checkedAt = now;
+
+        checkedAt = System.currentTimeMillis();
+
         return javaOk;
     }
 
-    /** Returns the compiled program, or throws CompileError with the compiler message. */
-    static Compiled compile(String code) throws IOException, InterruptedException, CompileError {
-        Matcher m = CLASS_NAME.matcher(code);
-        String cls = m.find() ? m.group(1) : "Main";
+    // ---------- Compilation ----------
+
+    static Compiled compile(String code)
+            throws IOException, InterruptedException, CompileError {
+
+        Matcher matcher = CLASS_NAME.matcher(code);
+
+        String cls = matcher.find()
+                ? matcher.group(1)
+                : "Main";
+
         Path dir = Files.createTempDirectory("shikshak-");
-        Path file = dir.resolve(cls + ".java");
-        Files.writeString(file, code, StandardCharsets.UTF_8);
-        Process p = builder(List.of("javac", "-encoding", "UTF-8", file.toString()), dir).start();
-        byte[] out = readCapped(p.getInputStream(), MAX_OUTPUT);
-        boolean finished = p.waitFor(15, TimeUnit.SECONDS);
-        if (!finished) p.destroyForcibly();
-        if (!finished || p.exitValue() != 0) {
+
+        try {
+            Path file = dir.resolve(cls + ".java");
+
+            Files.writeString(
+                    file,
+                    code,
+                    StandardCharsets.UTF_8
+            );
+
+            Process process = builder(
+                    List.of(
+                            "javac",
+                            "-encoding",
+                            "UTF-8",
+                            file.toString()
+                    ),
+                    dir
+            ).start();
+
+            byte[][] output = new byte[1][];
+
+            Thread reader = new Thread(() -> {
+                try {
+                    output[0] = readCapped(
+                            process.getInputStream(),
+                            MAX_OUTPUT
+                    );
+                } catch (IOException e) {
+                    output[0] = new byte[0];
+                }
+            });
+
+            reader.setDaemon(true);
+            reader.start();
+
+            // Wait for compilation with a real timeout.
+            boolean finished = process.waitFor(
+                    15,
+                    TimeUnit.SECONDS
+            );
+
+            if (!finished) {
+                destroyProcessTree(process);
+                process.waitFor();
+            }
+
+            reader.join(2000);
+
+            byte[] bytes = output[0] == null
+                    ? new byte[0]
+                    : output[0];
+
+            if (!finished || process.exitValue() != 0) {
+
+                String message = new String(
+                        bytes,
+                        StandardCharsets.UTF_8
+                )
+                        .replace(dir.toString() + "/", "")
+                        .replace(dir.toString() + "\\", "")
+                        .trim();
+
+                throw new CompileError(
+                        finished
+                                ? message
+                                : "Compilation took too long."
+                );
+            }
+
+            return new Compiled(dir, cls);
+
+        } catch (IOException | InterruptedException | CompileError e) {
             deleteQuietly(dir);
-            String msg = new String(out, StandardCharsets.UTF_8)
-                    .replace(dir.toString() + "/", "").replace(dir.toString() + "\\", "").trim();
-            throw new CompileError(finished ? msg : "Compilation took too long.");
+            throw e;
         }
-        return new Compiled(dir, cls);
     }
 
     static final class CompileError extends Exception {
-        CompileError(String m) { super(m); }
+
+        CompileError(String message) {
+            super(message);
+        }
     }
 
-    /** Runs one compiled program with the given stdin. */
-    static Exec execOne(Compiled c, String input, long limitMs) throws IOException, InterruptedException {
-        Process p = builder(List.of("java", "-Xmx128m", "-Xss2m", "-cp", c.dir().toString(), c.cls()), c.dir()).start();
+    // ---------- Process termination ----------
+
+    private static void destroyProcessTree(Process process) {
+
+        try {
+            process.descendants().forEach(
+                    ProcessHandle::destroyForcibly
+            );
+        } catch (Exception ignored) {
+        }
+
+        process.destroyForcibly();
+    }
+
+    // ---------- Execute one program ----------
+
+    static Exec execOne(
+            Compiled compiled,
+            String input,
+            long limitMs
+    ) throws IOException, InterruptedException {
+
+        Process process = builder(
+                List.of(
+                        "java",
+                        "-Xmx128m",
+                        "-Xss2m",
+                        "-cp",
+                        compiled.dir().toString(),
+                        compiled.cls()
+                ),
+                compiled.dir()
+        ).start();
+
+        // Send input to the program.
         Thread feeder = new Thread(() -> {
-            try (OutputStream os = p.getOutputStream()) {
-                os.write(((input == null || input.isEmpty() ? "" : input) + "\n").getBytes(StandardCharsets.UTF_8));
-            } catch (IOException ignored) { /* program closed stdin early */ }
+
+            try (OutputStream os = process.getOutputStream()) {
+
+                String value = input == null || input.isEmpty()
+                        ? ""
+                        : input;
+
+                os.write(
+                        (value + "\n").getBytes(StandardCharsets.UTF_8)
+                );
+
+            } catch (IOException ignored) {
+                // Program may close stdin early.
+            }
         });
+
         feeder.setDaemon(true);
         feeder.start();
+
+        // Read output without allowing unlimited memory growth.
         byte[][] box = new byte[1][];
+
         Thread reader = new Thread(() -> {
-            try { box[0] = readCapped(p.getInputStream(), MAX_OUTPUT); } catch (IOException e) { box[0] = new byte[0]; }
+
+            try {
+                box[0] = readCapped(
+                        process.getInputStream(),
+                        MAX_OUTPUT
+                );
+            } catch (IOException e) {
+                box[0] = new byte[0];
+            }
         });
+
         reader.setDaemon(true);
         reader.start();
-        boolean done = p.waitFor(limitMs, TimeUnit.MILLISECONDS);
-        if (!done) p.destroyForcibly().waitFor();
+
+        boolean finished = process.waitFor(
+                limitMs,
+                TimeUnit.MILLISECONDS
+        );
+
+        if (!finished) {
+            destroyProcessTree(process);
+            process.waitFor();
+        }
+
         reader.join(1000);
-        String out = new String(box[0] == null ? new byte[0] : box[0], StandardCharsets.UTF_8);
-        return new Exec(done && p.exitValue() == 0, !done, out);
+
+        String output = new String(
+                box[0] == null ? new byte[0] : box[0],
+                StandardCharsets.UTF_8
+        );
+
+        return new Exec(
+                finished && process.exitValue() == 0,
+                !finished,
+                output
+        );
     }
 
-    /** Compile + run. Result map matches what the web app expects: ok, stage, output. */
-    static Map<String, Object> run(String code, String input) throws IOException, InterruptedException {
-        Compiled c;
-        try { c = compile(code); }
-        catch (CompileError e) { return result(false, "compile", e.getMessage()); }
+    // ---------- Run endpoint ----------
+
+    static Map<String, Object> run(
+            String code,
+            String input
+    ) throws IOException, InterruptedException {
+
+        Compiled compiled;
+
         try {
-            Exec r = execOne(c, input, 5000);
-            String text = r.output();
-            if (r.timedOut()) text += "\n[Stopped: program ran for more than 5 seconds. Infinite loop?]";
-            return result(r.ok(), "run", text.isBlank() ? "(program finished with no output)" : text);
-        } finally { c.cleanup(); }
+            compiled = compile(code);
+        } catch (CompileError e) {
+            return result(
+                    false,
+                    "compile",
+                    e.getMessage()
+            );
+        }
+
+        try {
+            Exec execution = execOne(
+                    compiled,
+                    input,
+                    5000
+            );
+
+            String output = execution.output();
+
+            if (execution.timedOut()) {
+                output += "\n[Stopped: program ran for more than 5 seconds. Infinite loop?]";
+            }
+
+            return result(
+                    execution.ok(),
+                    "run",
+                    output.isBlank()
+                            ? "(program finished with no output)"
+                            : output
+            );
+
+        } finally {
+            compiled.cleanup();
+        }
     }
 
-    /** Compile once, run every test, compare output. */
-    static Map<String, Object> check(String code, List<Map<String, Object>> tests) throws IOException, InterruptedException {
-        Compiled c;
-        try { c = compile(code); }
-        catch (CompileError e) { return result(false, "compile", e.getMessage()); }
+    // ---------- Practice checking endpoint ----------
+
+    static Map<String, Object> check(
+            String code,
+            List<Map<String, Object>> tests
+    ) throws IOException, InterruptedException {
+
+        Compiled compiled;
+
+        try {
+            compiled = compile(code);
+        } catch (CompileError e) {
+            return result(
+                    false,
+                    "compile",
+                    e.getMessage()
+            );
+        }
+
         try {
             List<Object> results = new ArrayList<>();
+
             int passed = 0;
-            for (Map<String, Object> t : tests) {
-                String in = (String) t.get("input"), expected = (String) t.get("expected");
-                Exec r = execOne(c, in, 3000);
-                String got = r.timedOut() ? "[Stopped: took longer than 3 seconds]" : r.output();
-                boolean pass = !r.timedOut() && r.ok() && normalize(got).equals(normalize(expected));
-                if (pass) passed++;
+
+            for (Map<String, Object> test : tests) {
+
+                String input = (String) test.get("input");
+                String expected = (String) test.get("expected");
+
+                Exec execution = execOne(
+                        compiled,
+                        input,
+                        3000
+                );
+
+                String actual = execution.timedOut()
+                        ? "[Stopped: took longer than 3 seconds]"
+                        : execution.output();
+
+                boolean pass =
+                        !execution.timedOut()
+                        && execution.ok()
+                        && normalize(actual).equals(normalize(expected));
+
+                if (pass) {
+                    passed++;
+                }
+
                 Map<String, Object> row = new LinkedHashMap<>();
+
                 row.put("pass", pass);
-                row.put("input", in);
+                row.put("input", input);
                 row.put("expected", expected);
-                row.put("got", got.length() > 2000 ? got.substring(0, 2000) : got);
+
+                row.put(
+                        "got",
+                        actual.length() > 2000
+                                ? actual.substring(0, 2000)
+                                : actual
+                );
+
                 results.add(row);
             }
-            Map<String, Object> m = new LinkedHashMap<>();
-            m.put("ok", true);
-            m.put("stage", "check");
-            m.put("results", results);
-            m.put("passed", passed);
-            m.put("total", results.size());
-            return m;
-        } finally { c.cleanup(); }
+
+            Map<String, Object> response = new LinkedHashMap<>();
+
+            response.put("ok", true);
+            response.put("stage", "check");
+            response.put("results", results);
+            response.put("passed", passed);
+            response.put("total", results.size());
+
+            return response;
+
+        } finally {
+            compiled.cleanup();
+        }
     }
 
-    static String normalize(String s) {
-        StringBuilder b = new StringBuilder();
-        String[] lines = s.replace("\r", "").split("\n", -1);
+    // ---------- Output comparison ----------
+
+    static String normalize(String value) {
+
+        StringBuilder result = new StringBuilder();
+
+        String[] lines = value
+                .replace("\r", "")
+                .split("\n", -1);
+
         for (int i = 0; i < lines.length; i++) {
-            if (i > 0) b.append('\n');
-            b.append(lines[i].stripTrailing());
+
+            if (i > 0) {
+                result.append('\n');
+            }
+
+            result.append(lines[i].stripTrailing());
         }
-        return b.toString().strip();
+
+        return result.toString().strip();
     }
 
-    static Map<String, Object> result(boolean ok, String stage, String output) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("ok", ok);
-        m.put("stage", stage);
-        m.put("output", output);
-        return m;
+    // ---------- Standard response ----------
+
+    static Map<String, Object> result(
+            boolean ok,
+            String stage,
+            String output
+    ) {
+
+        Map<String, Object> response = new LinkedHashMap<>();
+
+        response.put("ok", ok);
+        response.put("stage", stage);
+        response.put("output", output);
+
+        return response;
     }
 
-    /** Reads everything, keeps only the first max bytes (so a noisy program cannot fill memory or block). */
-    private static byte[] readCapped(InputStream in, int max) throws IOException {
-        java.io.ByteArrayOutputStream keep = new java.io.ByteArrayOutputStream();
-        byte[] buf = new byte[4096];
-        int n;
-        while ((n = in.read(buf)) > 0) {
+    // ---------- Capped output reader ----------
+
+    private static byte[] readCapped(
+            InputStream input,
+            int max
+    ) throws IOException {
+
+        java.io.ByteArrayOutputStream keep =
+                new java.io.ByteArrayOutputStream();
+
+        byte[] buffer = new byte[4096];
+
+        int count;
+
+        while ((count = input.read(buffer)) > 0) {
+
             int room = max - keep.size();
-            if (room > 0) keep.write(buf, 0, Math.min(n, room));
+
+            if (room > 0) {
+                keep.write(
+                        buffer,
+                        0,
+                        Math.min(count, room)
+                );
+            }
         }
+
         return keep.toByteArray();
     }
 
+    // ---------- Temporary directory cleanup ----------
+
     private static void deleteQuietly(Path dir) {
-        try (Stream<Path> w = Files.walk(dir)) {
-            w.sorted(Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
-        } catch (IOException ignored) { }
+
+        try (Stream<Path> walk = Files.walk(dir)) {
+
+            walk.sorted(Comparator.reverseOrder())
+                    .forEach(path -> path.toFile().delete());
+
+        } catch (IOException ignored) {
+        }
     }
 }
